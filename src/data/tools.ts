@@ -150,7 +150,14 @@ export const TOOL_CATEGORIES = {
   play: {
     name: 'PLAY & WIN',
     description: 'Randomize teams, games and winners.',
-    tools: [TOOLS.randomTeamGenerator, TOOLS.giveawayWinnerPicker, TOOLS.randomGamePicker],
+    tools: [
+      TOOLS.randomTeamGenerator,
+      TOOLS.randomGroupGenerator,
+      TOOLS.tournamentDraw,
+      TOOLS.diceRoller,
+      TOOLS.giveawayWinnerPicker,
+      TOOLS.randomGamePicker,
+    ],
   },
 };
 

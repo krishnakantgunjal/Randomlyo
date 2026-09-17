@@ -11,7 +11,7 @@ interface Props {
 const { 
 	title, 
 	description, 
-	image = 'https://randomlyo.com/og-image.png',
+	image = 'https://randomlyo.krishnakantgunjal5.workers.dev/og-image.png',
 	canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString()
 } = Astro.props;
 ---
@@ -71,6 +71,14 @@ const {
 		<!-- Main Content -->
 		<main>
 			<slot />
+
+			<!-- Brand sign-off: the Randomlyo name closes out every page -->
+			<section class="border-t border-line py-10 sm:py-12">
+				<a href="/" class="flex flex-col items-center gap-3" aria-label="Randomlyo home">
+					<span class="grid h-12 w-12 place-items-center rounded-2xl bg-brand text-lg text-ink" aria-hidden="true">R</span>
+					<h2 class="text-3xl text-ink sm:text-4xl">Randomlyo</h2>
+				</a>
+			</section>
 		</main>
 
 		<!-- Footer -->
