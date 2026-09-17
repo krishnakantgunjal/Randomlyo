@@ -1,0 +1,34 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ToolLayout from '../components/ToolLayout.astro';
+import ShareButton from '../components/ShareButton.astro';
+import ListInput from '../components/ListInput.astro';
+
+const title = 'Giveaway Winner Picker | Randomlyo';
+const description = 'Choose one or more giveaway winners from a participant list.';
+const defaultParticipants = 'Participant 1, Participant 2, Participant 3';
+---
+
+<Layout title={title} description={description}>
+  <ToolLayout title="Giveaway / Winner Picker" description="Choose one or more winners from a participant list." toolId="giveawayWinnerPicker">
+    <div class="grid items-start gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+      <section class="surface p-5 sm:p-7" aria-labelledby="giveaway-settings">
+        <p class="eyebrow">Giveaway setup</p><h2 id="giveaway-settings" class="mt-2 text-xl">Who is entered?</h2>
+        <ListInput id="participantsList" defaultValue={defaultParticipants} placeholder="Participant 1, Participant 2, Participant 3" class="mt-5" />
+        <p class="mt-3 text-xs text-ink-soft">Separate participants with commas or new lines.</p>
+        <label class="mt-5 block text-sm font-bold text-ink-soft">Number of winners<input id="numWinners" type="number" min="1" value="1" class="mt-2 min-h-11 w-full rounded-xl border border-line px-3 text-ink" /></label>
+        <button id="pickBtn" type="button" class="primary-action mt-7 w-full">Pick winner <span aria-hidden="true">-&gt;</span></button>
+        <button id="resetBtn" type="button" class="mt-4 w-full text-sm font-bold text-ink-soft underline decoration-line underline-offset-4 hover:text-ink">Reset</button>
+        <p id="errorMessage" class="mt-4 hidden border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert"></p>
+      </section>
+      <section class="surface min-h-[25rem] bg-white p-5 text-center sm:p-8" aria-live="polite"><p class="eyebrow">The winner</p><div id="emptyState"><p class="mt-6 text-5xl">🎯</p><p class="mt-4 text-sm text-ink-soft">The winning name will appear here.</p></div><div id="resultContainer" class="hidden rounded-xl"><div id="winnersDisplay" class="mt-6 space-y-3 text-4xl font-bold text-ink"></div><div class="mt-8 flex flex-wrap justify-center gap-2"><button id="removeWinnersBtn" type="button" class="secondary-action">Remove winners</button><button id="copyBtn" type="button" class="secondary-action">Copy</button><ShareButton resultId="" tool="giveaway-winner-picker" /></div></div></section>
+    </div>
+  </ToolLayout>
+</Layout>
+
+<script>
+  import { validateList } from '../lib/utils'; import { pickMultiple } from '../lib/random'; import { revealResult } from '../lib/effects';
+  const participants = document.getElementById('participantsList') as HTMLTextAreaElement; const count = document.getElementById('numWinners') as HTMLInputElement; const result = document.getElementById('resultContainer') as HTMLElement; const empty = document.getElementById('emptyState') as HTMLElement; const display = document.getElementById('winnersDisplay') as HTMLElement; const error = document.getElementById('errorMessage') as HTMLElement; let winners: string[] = [];
+  function pick() { try { const validation = validateList(participants.value); const winnerCount = Number(count.value); if (!validation.valid || winnerCount < 1 || winnerCount > validation.items.length) throw new Error(validation.error || 'Choose a valid number of winners.'); winners = pickMultiple(validation.items, winnerCount); display.innerHTML = winners.map((winner, index) => `<div><span class="eyebrow block">Winner ${index + 1}</span>${winner}</div>`).join(''); const share = document.querySelector<HTMLElement>('[data-share-button]'); if (share) share.dataset.resultId = winners.join(', '); revealResult(result, { celebrate: true }); empty.classList.add('hidden'); error.classList.add('hidden'); } catch (err) { error.textContent = err instanceof Error ? err.message : 'Unable to pick winners'; error.classList.remove('hidden'); } }
+  document.getElementById('pickBtn')?.addEventListener('click', pick); document.getElementById('removeWinnersBtn')?.addEventListener('click', () => { const selected = new Set(winners); participants.value = participants.value.split(/[\n,]/).map(name => name.trim()).filter(name => name && !selected.has(name)).join('\n'); winners = []; result.classList.add('hidden'); empty.classList.remove('hidden'); }); document.getElementById('copyBtn')?.addEventListener('click', async (event) => { await navigator.clipboard.writeText(winners.join('\n')); const button = event.currentTarget as HTMLButtonElement; button.textContent = 'Copied'; setTimeout(() => { button.textContent = 'Copy'; }, 1500); }); document.getElementById('resetBtn')?.addEventListener('click', () => { participants.value = ''; count.value = '1'; winners = []; result.classList.add('hidden'); empty.classList.remove('hidden'); error.classList.add('hidden'); });
+</script>

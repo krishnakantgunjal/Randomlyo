@@ -1,0 +1,38 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ToolLayout from '../components/ToolLayout.astro';
+import ListInput from '../components/ListInput.astro';
+
+const title = 'Random Team Generator | Randomlyo';
+const description = 'Split a list of people into balanced random teams.';
+---
+
+<Layout title={title} description={description}>
+  <ToolLayout title="Random Team Generator" description="Split a list of people into balanced random teams." toolId="randomTeamGenerator">
+    <div class="grid items-start gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+      <section class="surface p-5 sm:p-7" aria-labelledby="team-settings">
+        <p class="eyebrow">Team setup</p><h2 id="team-settings" class="mt-2 text-xl">Who is playing?</h2>
+        <div class="mt-5">
+          <ListInput
+            id="playersList"
+            defaultValue="Alice, Bob, Charlie, David, Eve, Frank"
+            placeholder="Alice, Bob, Charlie"
+            class="bg-wash"
+          />
+        </div>
+        <label class="mt-5 block text-sm font-bold text-ink-soft">Number of teams<input id="numTeams" type="number" min="2" value="2" class="mt-2 min-h-11 w-full rounded-xl border border-line px-3 text-ink" /></label>
+        <button id="generateBtn" type="button" class="primary-action mt-7 w-full">Generate teams <span aria-hidden="true">-&gt;</span></button>
+        <button id="resetBtn" type="button" class="mt-4 w-full text-sm font-bold text-ink-soft underline decoration-line underline-offset-4 hover:text-ink">Reset</button>
+        <p id="errorMessage" class="mt-4 hidden border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert"></p>
+      </section>
+      <section class="surface min-h-[25rem] bg-white p-5 sm:p-7" aria-live="polite"><p class="eyebrow">The teams</p><div id="emptyState" class="py-20 text-center text-sm text-ink-soft">Your generated teams will appear here.</div><div id="teamsDisplay" class="mt-5 grid gap-3 sm:grid-cols-2"></div></section>
+    </div>
+  </ToolLayout>
+</Layout>
+
+<script>
+  import { validateList } from '../lib/utils'; import { shuffleArray } from '../lib/random'; import { revealResult } from '../lib/effects';
+  const players = document.getElementById('playersList') as HTMLTextAreaElement; const count = document.getElementById('numTeams') as HTMLInputElement; const display = document.getElementById('teamsDisplay') as HTMLElement; const empty = document.getElementById('emptyState') as HTMLElement; const error = document.getElementById('errorMessage') as HTMLElement;
+  document.getElementById('generateBtn')?.addEventListener('click', () => { try { const validation = validateList(players.value); const teamsCount = Number(count.value); if (!validation.valid || teamsCount < 2 || teamsCount > validation.items.length) throw new Error(validation.error || 'Choose a valid number of teams.'); const teams = Array.from({length: teamsCount}, () => [] as string[]); shuffleArray(validation.items).forEach((player, index) => teams[index % teamsCount].push(player)); display.innerHTML = teams.map((team, index) => `<article class="border border-line bg-wash p-5"><p class="eyebrow">Team ${index + 1}</p><ul class="mt-4 space-y-2 text-sm font-semibold">${team.map(player => `<li>${player}</li>`).join('')}</ul><p class="mt-5 text-xs text-ink-soft">${team.length} player${team.length === 1 ? '' : 's'}</p></article>`).join(''); empty.classList.add('hidden'); revealResult(display); error.classList.add('hidden'); } catch (err) { error.textContent = err instanceof Error ? err.message : 'Unable to make teams'; error.classList.remove('hidden'); } });
+  document.getElementById('resetBtn')?.addEventListener('click', () => { players.value = ''; count.value = '2'; display.innerHTML = ''; empty.classList.remove('hidden'); error.classList.add('hidden'); });
+</script>

@@ -1,0 +1,114 @@
+---
+import '../styles/global.css';
+
+interface Props {
+	title: string;
+	description: string;
+	image?: string;
+	canonicalUrl?: string;
+}
+
+const { 
+	title, 
+	description, 
+	image = 'https://randomlyo.com/og-image.png',
+	canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString()
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content={description} />
+		<meta name="theme-color" content="#ffffff" />
+		
+		<!-- Favicons -->
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<link rel="apple-touch-icon" href="/favicon.ico" />
+		
+		<!-- Canonical URL -->
+		<link rel="canonical" href={canonicalUrl} />
+		
+		<!-- Open Graph -->
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={image} />
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={canonicalUrl} />
+		
+		<!-- Twitter Card -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={image} />
+		
+		<!-- Preconnect to external resources -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+	</head>
+	<body class="bg-white text-ink">
+		<header class="border-b border-line bg-white">
+			<div class="container-safe flex min-h-18 items-center justify-between">
+				<a href="/" class="flex items-center gap-3 text-lg font-bold tracking-tight" aria-label="Randomlyo home">
+					<span class="grid h-9 w-9 place-items-center rounded-xl bg-brand text-sm text-ink">R</span>
+					Randomlyo
+				</a>
+				<nav class="hidden items-center gap-7 text-sm font-semibold text-ink-soft md:flex" aria-label="Main navigation">
+					<a href="/#tools" class="transition-colors hover:text-ink">Explore tools</a>
+					<a href="/random-wheel/" class="transition-colors hover:text-ink">Random Wheel</a>
+					<a href="/about/" class="transition-colors hover:text-ink">About</a>
+				</nav>
+				<a href="/random-wheel/" class="secondary-action min-h-10 px-4 py-2 text-xs">Try the wheel <span aria-hidden="true">-&gt;</span></a>
+			</div>
+		</header>
+
+		<!-- Main Content -->
+		<main>
+			<slot />
+		</main>
+
+		<!-- Footer -->
+		<footer class="border-t border-line bg-wash">
+			<div class="container-safe py-12 sm:py-16">
+				<div class="mb-10 grid grid-cols-2 gap-8 md:grid-cols-4">
+					<div>
+						<h3 class="mb-4 font-semibold">Tools</h3>
+						<ul class="space-y-2 text-sm text-ink-soft">
+							<li><a href="/random-picker/" class="hover:text-gray-900 transition">Random Picker</a></li>
+							<li><a href="/random-name-picker/" class="hover:text-gray-900 transition">Name Picker</a></li>
+							<li><a href="/coin-toss/" class="hover:text-gray-900 transition">Coin Toss</a></li>
+						</ul>
+					</div>
+					<div>
+						<h3 class="mb-4 font-semibold">Company</h3>
+						<ul class="space-y-2 text-sm text-ink-soft">
+							<li><a href="/about/" class="hover:text-gray-900 transition">About</a></li>
+							<li><a href="/contact/" class="hover:text-gray-900 transition">Contact</a></li>
+						</ul>
+					</div>
+					<div>
+						<h3 class="mb-4 font-semibold">Legal</h3>
+						<ul class="space-y-2 text-sm text-ink-soft">
+							<li><a href="/privacy-policy/" class="hover:text-gray-900 transition">Privacy</a></li>
+							<li><a href="/terms/" class="hover:text-gray-900 transition">Terms</a></li>
+						</ul>
+					</div>
+					<div>
+						<h3 class="mb-4 font-semibold">Randomlyo</h3>
+						<p class="text-sm text-ink-soft">Pick. Decide. Randomize.</p>
+					</div>
+				</div>
+				<div class="flex flex-col items-start justify-between gap-3 border-t border-line pt-8 text-sm text-ink-soft sm:flex-row sm:items-center">
+					<p>&copy; 2026 Randomlyo. All rights reserved.</p>
+					<p>Simple online tools for random picks, decisions and draws.</p>
+				</div>
+			</div>
+		</footer>
+	</body>
+</html>

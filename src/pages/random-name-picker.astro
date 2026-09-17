@@ -1,0 +1,76 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ToolLayout from '../components/ToolLayout.astro';
+import ShareButton from '../components/ShareButton.astro';
+import ListInput from '../components/ListInput.astro';
+
+const title = 'Random Name Picker - Select Names | Randomlyo';
+const description = 'Pick one or more names at random with a clear, private winner reveal.';
+---
+
+<Layout title={title} description={description}>
+  <ToolLayout title="Random Name Picker" description="Pick one or more names at random." toolId="randomNamePicker">
+    <div class="grid items-start gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+      <section class="surface p-5 sm:p-7" aria-labelledby="participants-heading">
+        <div class="flex items-start justify-between border-b border-line pb-5"><div><p class="eyebrow">Participants</p><h2 id="participants-heading" class="mt-2 text-xl">Who is in?</h2></div><span class="text-2xl" aria-hidden="true">👤</span></div>
+        <label for="namesList" class="sr-only">Participant names</label>
+        <ListInput
+          id="namesList"
+          name="namesList"
+          defaultValue="Alice, Bob, Charlie"
+          placeholder={'Alice\nBob\nCharlie\nDiana'}
+          class="mt-5"
+        />
+        <details class="mt-4 border-t border-line pt-4"><summary class="cursor-pointer text-sm font-bold text-ink-soft transition-colors hover:text-ink">Paste a list - one name per line</summary><p class="mt-2 text-xs leading-5 text-ink-soft">Paste names separated by new lines or commas, then choose your winners.</p></details>
+        <div class="mt-5 flex items-end gap-3"><div class="flex-1"><label for="numWinners" class="eyebrow">Winners</label><input id="numWinners" type="number" min="1" value="1" class="mt-2 min-h-11 w-full rounded-xl border border-line bg-white px-4 text-sm text-ink" /></div><button id="selectBtn" type="button" class="primary-action flex-1">Pick name <span aria-hidden="true">-&gt;</span></button></div>
+        <button id="resetBtn" type="button" class="mt-5 text-sm font-bold text-ink-soft underline decoration-line underline-offset-4 hover:text-ink">Reset list</button>
+      </section>
+
+      <section class="surface flex min-h-[25rem] flex-col justify-center bg-white p-5 text-center sm:p-8" aria-live="polite">
+        <p class="eyebrow">The result</p>
+        <div id="emptyResult"><p class="mt-5 text-5xl">✦</p><p class="mt-4 text-sm text-ink-soft">Your winner will appear here.</p></div>
+        <div id="resultContainer" class="hidden rounded-xl"><p class="mt-5 text-sm font-bold text-ink-soft">Selected name<span id="winnerPlural">s</span></p><div id="winnersContent" class="mt-4 space-y-2 text-4xl font-bold text-ink sm:text-5xl"></div><div class="mt-8 flex flex-wrap justify-center gap-2"><button id="selectAgainBtn" type="button" class="primary-action">Pick again</button><button id="removeWinnersBtn" type="button" class="secondary-action">Remove selected</button><button id="copyBtn" type="button" class="secondary-action">Copy</button><ShareButton resultId="" tool="random-name-picker" /></div></div>
+        <div id="errorContainer" class="mt-5 hidden border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert"><p id="errorMessage"></p></div>
+      </section>
+    </div>
+  </ToolLayout>
+</Layout>
+
+<script>
+  import { validateList } from '../lib/utils';
+  import { pickMultiple } from '../lib/random';
+  import { revealResult } from '../lib/effects';
+  const namesList = document.getElementById('namesList') as HTMLTextAreaElement;
+  const numWinners = document.getElementById('numWinners') as HTMLInputElement;
+  const selectBtn = document.getElementById('selectBtn') as HTMLButtonElement;
+  const resetBtn = document.getElementById('resetBtn') as HTMLButtonElement;
+  const selectAgainBtn = document.getElementById('selectAgainBtn') as HTMLButtonElement;
+  const removeWinnersBtn = document.getElementById('removeWinnersBtn') as HTMLButtonElement;
+  const copyBtn = document.getElementById('copyBtn') as HTMLButtonElement;
+  const resultContainer = document.getElementById('resultContainer') as HTMLElement;
+  const emptyResult = document.getElementById('emptyResult') as HTMLElement;
+  const winnersContent = document.getElementById('winnersContent') as HTMLElement;
+  const winnerPlural = document.getElementById('winnerPlural') as HTMLElement;
+  const errorContainer = document.getElementById('errorContainer') as HTMLElement;
+  const errorMessage = document.getElementById('errorMessage') as HTMLElement;
+  let currentWinners: string[] = [];
+
+  function pickNames() {
+    try {
+      const validation = validateList(namesList.value);
+      if (!validation.valid) throw new Error(validation.error || 'Add at least one name');
+      const count = Number.parseInt(numWinners.value, 10);
+      if (!Number.isInteger(count) || count < 1 || count > validation.items.length) throw new Error(`Choose between 1 and ${validation.items.length} winners`);
+      currentWinners = pickMultiple(validation.items, count);
+      winnersContent.innerHTML = currentWinners.map(name => `<div>${name}</div>`).join('');
+      winnerPlural.textContent = count === 1 ? '' : 's';
+      const share = document.querySelector<HTMLElement>('[data-share-button]');
+      if (share) share.dataset.resultId = currentWinners.join(', ');
+      emptyResult.classList.add('hidden'); revealResult(resultContainer, { celebrate: true }); errorContainer.classList.add('hidden');
+    } catch (error) { errorMessage.textContent = error instanceof Error ? error.message : 'Unable to pick a name'; errorContainer.classList.remove('hidden'); }
+  }
+  selectBtn.addEventListener('click', pickNames); selectAgainBtn.addEventListener('click', pickNames);
+  removeWinnersBtn.addEventListener('click', () => { const selected = new Set(currentWinners); namesList.value = namesList.value.split(/[\n,]/).map(name => name.trim()).filter(name => name && !selected.has(name)).join('\n'); currentWinners = []; resultContainer.classList.add('hidden'); emptyResult.classList.remove('hidden'); });
+  copyBtn.addEventListener('click', async () => { await navigator.clipboard.writeText(currentWinners.join('\n')); copyBtn.textContent = 'Copied'; setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500); });
+  resetBtn.addEventListener('click', () => { namesList.value = ''; numWinners.value = '1'; currentWinners = []; resultContainer.classList.add('hidden'); emptyResult.classList.remove('hidden'); errorContainer.classList.add('hidden'); });
+</script>

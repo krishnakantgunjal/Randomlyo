@@ -1,0 +1,38 @@
+---
+interface Props {
+  type?: 'text' | 'number' | 'email' | 'tel';
+  placeholder?: string;
+  value?: string;
+  class?: string;
+  disabled?: boolean;
+  required?: boolean;
+  ariaLabel?: string;
+  id?: string;
+}
+
+const {
+  type = 'text',
+  placeholder = '',
+  value = '',
+  class: className = '',
+  disabled = false,
+  required = false,
+  ariaLabel,
+  id,
+} = Astro.props;
+
+const baseClasses = 'w-full min-h-11 rounded-xl border border-line bg-white px-4 py-3 text-sm text-ink placeholder:text-ink-soft/60 transition-colors duration-200 focus:border-brand-deep disabled:bg-wash disabled:cursor-not-allowed';
+
+const classes = `${baseClasses} ${className}`;
+---
+
+<input
+  type={type}
+  placeholder={placeholder}
+  value={value}
+  class={classes}
+  disabled={disabled}
+  required={required}
+  aria-label={ariaLabel}
+  id={id}
+/>

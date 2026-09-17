@@ -1,0 +1,52 @@
+---
+interface Props {
+  resultId: string;
+  tool: string;
+  label?: string;
+}
+
+const { resultId, tool, label = 'Share' } = Astro.props;
+---
+
+<button
+  type="button"
+  class="secondary-action"
+  data-share-button
+  data-result-id={resultId}
+  data-tool={tool}
+>
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.49 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684 6.632 3.316m-6.632-6 6.632-3.316m0 0a3 3 0 11-1.342-2.684 3 3 0 011.342 2.684zm0 9.316a3 3 0 11-1.342 2.684 3 3 0 001.342-2.684z" />
+  </svg>
+  <span data-share-label>{label}</span>
+</button>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-share-button]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const resultId = button.dataset.resultId;
+      const tool = button.dataset.tool;
+      if (!resultId || !tool) return;
+
+      const url = `${window.location.origin}/result/?tool=${encodeURIComponent(tool)}&result=${encodeURIComponent(resultId)}`;
+      const label = button.querySelector('[data-share-label]');
+      const originalLabel = label?.textContent || 'Share';
+
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: 'Randomlyo result', url });
+        } else {
+          await navigator.clipboard.writeText(url);
+        }
+        if (label) label.textContent = navigator.share ? 'Shared!' : 'Link copied!';
+      } catch (error) {
+        if ((error as DOMException).name !== 'AbortError') console.error('Failed to share:', error);
+        return;
+      }
+
+      window.setTimeout(() => {
+        if (label) label.textContent = originalLabel;
+      }, 2000);
+    });
+  });
+</script>

@@ -1,0 +1,37 @@
+---
+import type { Tool } from '../data/tools';
+import { getRelatedTools } from '../data/tools';
+
+interface Props {
+  toolId: string;
+}
+
+const { toolId } = Astro.props;
+const relatedTools = getRelatedTools(toolId);
+
+if (relatedTools.length === 0) {
+  // Don't render if no related tools
+}
+---
+
+{relatedTools.length > 0 && (
+  <section class="mt-12 border-t border-line pt-10">
+    <div class="mb-6 flex items-end justify-between gap-4">
+      <div><p class="eyebrow">Keep exploring</p><h2 class="mt-2 text-2xl">Need another tool?</h2></div>
+      <span class="hidden text-sm text-ink-soft sm:block">A few more useful ways to randomize.</span>
+    </div>
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+      {relatedTools.map((tool) => (
+        <a 
+          href={tool.url}
+          class="group flex items-center justify-between gap-4 border border-line bg-white p-4 transition-colors hover:border-brand-deep hover:bg-wash"
+        >
+          <div><h3 class="text-sm font-bold text-ink">
+            {tool.name}
+          </h3><p class="mt-1 text-xs leading-5 text-ink-soft">{tool.description}</p></div>
+          <span class="text-brand-deep transition-transform group-hover:translate-x-1" aria-hidden="true">-&gt;</span>
+        </a>
+      ))}
+    </div>
+  </section>
+)}

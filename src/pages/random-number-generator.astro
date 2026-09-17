@@ -1,0 +1,50 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ToolLayout from '../components/ToolLayout.astro';
+
+const title = 'Random Number Generator | Randomlyo';
+const description = 'Generate random numbers within any range.';
+---
+
+<Layout title={title} description={description}>
+  <ToolLayout title="Random Number" description="Generate random numbers within any range." toolId="randomNumberGenerator">
+    <div class="grid items-start gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+      <section class="surface p-5 sm:p-7" aria-labelledby="number-settings">
+        <p class="eyebrow">Number settings</p>
+        <h2 id="number-settings" class="mt-2 text-xl">Set your range</h2>
+        <div class="mt-6 grid grid-cols-2 gap-3">
+          <label class="text-sm font-bold text-ink-soft">Minimum<input id="minNum" type="number" value="1" class="mt-2 min-h-11 w-full rounded-xl border border-line px-3 text-ink" /></label>
+          <label class="text-sm font-bold text-ink-soft">Maximum<input id="maxNum" type="number" value="100" class="mt-2 min-h-11 w-full rounded-xl border border-line px-3 text-ink" /></label>
+        </div>
+        <label class="mt-5 block text-sm font-bold text-ink-soft">How many?<input id="quantity" type="number" min="1" value="1" class="mt-2 min-h-11 w-full rounded-xl border border-line px-3 text-ink" /></label>
+        <label class="mt-5 flex items-center gap-3 text-sm font-bold text-ink-soft"><input id="allowDuplicates" type="checkbox" class="h-4 w-4 accent-brand-deep" /> Allow duplicates</label>
+        <button id="generateBtn" type="button" class="primary-action mt-7 w-full">Generate numbers <span aria-hidden="true">-&gt;</span></button>
+        <button id="resetBtn" type="button" class="mt-4 w-full text-sm font-bold text-ink-soft underline decoration-line underline-offset-4 hover:text-ink">Reset</button>
+        <p id="errorMessage" class="mt-4 hidden border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert"></p>
+      </section>
+      <section class="surface flex min-h-[25rem] flex-col items-center justify-center bg-white p-6 text-center sm:p-10" aria-live="polite">
+        <p class="eyebrow">Your result</p>
+        <div id="emptyState"><p class="mt-5 text-5xl text-ink-soft">#</p><p class="mt-4 text-sm text-ink-soft">Your number will appear here.</p></div>
+        <p id="resultContent" class="mt-6 break-words text-6xl font-bold text-ink sm:text-8xl"></p>
+        <button id="copyBtn" type="button" class="secondary-action mt-8 hidden">Copy result</button>
+      </section>
+    </div>
+  </ToolLayout>
+</Layout>
+
+<script>
+  import { generateRandomNumbers } from '../lib/random';
+  import { revealResult } from '../lib/effects';
+  const minNum = document.getElementById('minNum') as HTMLInputElement;
+  const maxNum = document.getElementById('maxNum') as HTMLInputElement;
+  const quantity = document.getElementById('quantity') as HTMLInputElement;
+  const allowDuplicates = document.getElementById('allowDuplicates') as HTMLInputElement;
+  const result = document.getElementById('resultContent') as HTMLElement;
+  const emptyState = document.getElementById('emptyState') as HTMLElement;
+  const copy = document.getElementById('copyBtn') as HTMLButtonElement;
+  const error = document.getElementById('errorMessage') as HTMLElement;
+  function generate() { try { const min = Number(minNum.value); const max = Number(maxNum.value); const count = Number(quantity.value); if (!Number.isInteger(min) || !Number.isInteger(max) || min > max || count < 1) throw new Error('Enter a valid range and quantity.'); const numbers = generateRandomNumbers(min, max, count, allowDuplicates.checked); result.textContent = numbers.join(', '); emptyState.classList.add('hidden'); copy.classList.remove('hidden'); revealResult(result); error.classList.add('hidden'); } catch (err) { error.textContent = err instanceof Error ? err.message : 'Unable to generate numbers'; error.classList.remove('hidden'); } }
+  document.getElementById('generateBtn')?.addEventListener('click', generate);
+  copy.addEventListener('click', async () => { await navigator.clipboard.writeText(result.textContent || ''); copy.textContent = 'Copied'; setTimeout(() => { copy.textContent = 'Copy result'; }, 1500); });
+  document.getElementById('resetBtn')?.addEventListener('click', () => { minNum.value = '1'; maxNum.value = '100'; quantity.value = '1'; allowDuplicates.checked = false; result.textContent = ''; emptyState.classList.remove('hidden'); copy.classList.add('hidden'); error.classList.add('hidden'); });
+</script>

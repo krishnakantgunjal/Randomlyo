@@ -1,0 +1,112 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const title = 'About Randomlyo';
+const description = 'About Randomlyo - Simple, fast, and fair random selection tools.';
+---
+
+<Layout title={title} description={description}>
+  <div class="py-16 sm:py-24">
+    <div class="container-safe max-w-3xl">
+      <h1 class="text-4xl sm:text-5xl font-bold mb-8">About Randomlyo</h1>
+
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">What is Randomlyo?</h2>
+        <p class="text-lg text-gray-700 mb-4">
+          Randomlyo is a collection of simple, fast, and fair online tools for making random selections. Whether you need to pick a winner, divide people into teams, flip a coin, or spin a wheel, Randomlyo makes it quick and easy.
+        </p>
+        <p class="text-lg text-gray-700">
+          Our mission is to provide a clean, modern, and distraction-free randomization experience. No ads cluttering your tool, no mandatory accounts, no unnecessary features. Just random.
+        </p>
+      </section>
+
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Why Randomlyo?</h2>
+        <ul class="space-y-4 text-gray-700">
+          <li class="flex gap-4">
+            <span class="text-blue-600 font-bold text-xl">✓</span>
+            <div>
+              <h3 class="font-semibold mb-1">Fast & Simple</h3>
+              <p>No registration, no ads in the tools. Just pick what you need and use it.</p>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <span class="text-blue-600 font-bold text-xl">✓</span>
+            <div>
+              <h3 class="font-semibold mb-1">Cryptographically Secure</h3>
+              <p>We use browser-based cryptographic randomization for truly fair selections.</p>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <span class="text-blue-600 font-bold text-xl">✓</span>
+            <div>
+              <h3 class="font-semibold mb-1">Privacy First</h3>
+              <p>Everything happens on your device. We don't store or track your data.</p>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <span class="text-blue-600 font-bold text-xl">✓</span>
+            <div>
+              <h3 class="font-semibold mb-1">Always Free</h3>
+              <p>All tools are completely free. No premium version. No hidden costs.</p>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <span class="text-blue-600 font-bold text-xl">✓</span>
+            <div>
+              <h3 class="font-semibold mb-1">Open to Feedback</h3>
+              <p>We listen to our users and continuously improve our tools.</p>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Our Tools</h2>
+        <p class="text-gray-700 mb-6">
+          We provide 11 carefully designed tools, organized into 4 categories:
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 class="font-bold mb-3 text-blue-600">PICK</h3>
+            <ul class="space-y-2 text-gray-700 text-sm">
+              <li>• <a href="/random-picker/" class="hover:text-blue-600">Random Picker / Wheel</a></li>
+              <li>• <a href="/random-name-picker/" class="hover:text-blue-600">Random Name Picker</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-bold mb-3 text-blue-600">GROUPS</h3>
+            <ul class="space-y-2 text-gray-700 text-sm">
+              <li>• <a href="/random-team-generator/" class="hover:text-blue-600">Random Team Generator</a></li>
+              <li>• <a href="/random-group-generator/" class="hover:text-blue-600">Random Group Generator</a></li>
+              <li>• <a href="/tournament-draw/" class="hover:text-blue-600">Tournament Draw</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-bold mb-3 text-blue-600">DECIDE</h3>
+            <ul class="space-y-2 text-gray-700 text-sm">
+              <li>• <a href="/coin-toss/" class="hover:text-blue-600">Coin Toss</a></li>
+              <li>• <a href="/who-goes-first/" class="hover:text-blue-600">Who Goes First?</a></li>
+              <li>• <a href="/yes-or-no/" class="hover:text-blue-600">Yes / No</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-bold mb-3 text-blue-600">RANDOMIZE</h3>
+            <ul class="space-y-2 text-gray-700 text-sm">
+              <li>• <a href="/random-number-generator/" class="hover:text-blue-600">Random Number Generator</a></li>
+              <li>• <a href="/dice-roller/" class="hover:text-blue-600">Dice Roller</a></li>
+              <li>• <a href="/giveaway-winner-picker/" class="hover:text-blue-600">Giveaway Winner Picker</a></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-bold mb-4">Questions?</h2>
+        <p class="text-gray-700 mb-4">
+          If you have feedback, suggestions, or questions about Randomlyo, feel free to <a href="/contact/" class="text-blue-600 hover:underline">contact us</a>.
+        </p>
+      </section>
+    </div>
+  </div>
+</Layout>

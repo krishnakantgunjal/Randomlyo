@@ -1,0 +1,22 @@
+---
+interface Props {
+  name: string;
+  class?: string;
+}
+
+const { name, class: className = '' } = Astro.props;
+const icons: Record<string, string> = {
+  wheel: '🎡',
+  person: '👤',
+  dice: '🎲',
+  coin: '🪙',
+  people: '👨‍👩‍👧',
+  food: '🍕',
+  target: '🎯',
+  game: '🎮',
+};
+---
+
+<span class={`grid h-11 w-11 place-items-center rounded-xl bg-wash text-xl ${className}`} aria-hidden="true">
+  {icons[name] || '✦'}
+</span>

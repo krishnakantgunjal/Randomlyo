@@ -1,0 +1,37 @@
+---
+interface Props {
+  placeholder?: string;
+  value?: string;
+  class?: string;
+  disabled?: boolean;
+  required?: boolean;
+  ariaLabel?: string;
+  id?: string;
+  rows?: number;
+}
+
+const {
+  placeholder = '',
+  value = '',
+  class: className = '',
+  disabled = false,
+  required = false,
+  ariaLabel,
+  id,
+  rows = 4,
+} = Astro.props;
+
+const baseClasses = 'w-full rounded-xl border border-line bg-white px-4 py-3 text-sm leading-6 text-ink placeholder:text-ink-soft/60 resize-y transition-colors duration-200 focus:border-brand-deep disabled:bg-wash disabled:cursor-not-allowed';
+
+const classes = `${baseClasses} ${className}`;
+---
+
+<textarea
+  placeholder={placeholder.replaceAll('&#10;', '\n')}
+  class={classes}
+  disabled={disabled}
+  required={required}
+  aria-label={ariaLabel}
+  id={id}
+  rows={rows}
+>{value}</textarea>

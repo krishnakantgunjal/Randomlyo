@@ -1,0 +1,22 @@
+---
+interface Props {
+  title: string;
+  result: string;
+  class?: string;
+}
+
+const { title, result, class: className = '' } = Astro.props;
+
+const baseClasses = 'rounded-xl border border-brand-deep bg-wash p-7 text-center';
+const classes = `${baseClasses} ${className}`;
+---
+
+<div class={classes}>
+  <p class="eyebrow mb-4">{title}</p>
+  <p class="text-4xl font-bold text-ink sm:text-5xl" data-result-content>
+    {result}
+  </p>
+  <div class="flex flex-wrap gap-3 justify-center">
+    <slot />
+  </div>
+</div>

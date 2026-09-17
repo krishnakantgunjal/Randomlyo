@@ -1,0 +1,85 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ToolCard from '../components/ToolCard.astro';
+import { TOOL_CATEGORIES } from '../data/tools';
+
+const title = 'Randomlyo - Pick. Decide. Randomize.';
+const description = 'Simple online tools for random picks, decisions, teams, games and giveaways.';
+---
+
+<Layout title={title} description={description}>
+  <section class="overflow-hidden border-b border-line bg-wash">
+    <div class="container-safe grid min-h-[31rem] items-center gap-12 py-16 lg:grid-cols-[1.15fr_0.85fr] lg:py-20">
+      <div>
+        <p class="eyebrow">A little help choosing</p>
+        <h1 class="mt-5 max-w-3xl text-5xl leading-[0.98] sm:text-6xl lg:text-7xl">Pick. Decide. <span class="text-brand-deep">Randomize.</span></h1>
+        <p class="mt-7 max-w-xl text-lg leading-8 text-ink-soft">Simple online tools for random picks, decisions, teams, games and giveaways.</p>
+        <div class="mt-9 flex flex-wrap gap-3">
+          <a href="/random-wheel/" class="primary-action">Open Random Wheel <span aria-hidden="true">-&gt;</span></a>
+          <a href="#tools" class="secondary-action">Explore all tools</a>
+        </div>
+      </div>
+      <div class="relative hidden min-h-64 lg:block" aria-hidden="true">
+        <div class="absolute right-8 top-5 h-56 w-56 rotate-6 border-2 border-brand-deep bg-white p-5 shadow-[16px_16px_0_#aebeff]">
+          <div class="grid h-full grid-cols-2 gap-2"><span class="bg-brand"></span><span class="bg-wash"></span><span class="bg-wash"></span><span class="bg-brand"></span></div>
+        </div>
+        <div class="absolute bottom-1 left-6 flex h-24 w-52 -rotate-6 items-center justify-between border border-line bg-white px-5 shadow-[8px_8px_0_#dfe5f0]">
+          <span class="text-4xl">🎡</span><span class="text-sm font-bold text-ink-soft">Your next<br />choice starts here.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="container-safe py-12 sm:py-16">
+    <div class="grid overflow-hidden border border-ink bg-ink text-white lg:grid-cols-[0.8fr_1.2fr]">
+      <div class="flex flex-col justify-between p-7 sm:p-10">
+        <div>
+          <div class="flex items-center justify-between gap-4">
+            <p class="eyebrow text-brand">Featured tool</p>
+            <span class="text-2xl" aria-hidden="true">🎡</span>
+          </div>
+          <h2 class="mt-6 text-3xl sm:text-4xl">Random Wheel</h2>
+          <p class="mt-4 max-w-sm text-sm leading-6 text-white/70">Turn any list into a quick, satisfying choice. Add options, spin once, and move on.</p>
+        </div>
+        <a href="/random-wheel/" class="primary-action mt-10 w-fit bg-brand text-ink hover:bg-white">Open the wheel <span aria-hidden="true">-&gt;</span></a>
+      </div>
+      <div class="relative min-h-64 overflow-hidden bg-wash p-7 sm:min-h-80 sm:p-10" aria-label="Preview of the Random Wheel">
+        <div class="absolute left-1/2 top-1/2 aspect-square w-[min(68vw,20rem)] -translate-x-1/2 -translate-y-1/2 rounded-full border-[12px] border-white bg-brand shadow-[0_0_0_2px_#7e93eb]">
+          <div class="absolute inset-0 rounded-full" style="background: conic-gradient(#17233f 0deg 58deg, #aebeff 58deg 125deg, #7e93eb 125deg 190deg, #dfe5f0 190deg 250deg, #56627a 250deg 310deg, #f3f6fc 310deg 360deg);"></div>
+          <div class="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white bg-ink"></div>
+        </div>
+        <div class="absolute left-1/2 top-4 -translate-x-1/2 text-2xl text-ink" aria-hidden="true">▼</div>
+        <div class="absolute bottom-5 left-5 border border-line bg-white px-3 py-2 text-xs font-bold text-ink">Pizza · Burger · Pasta · ...</div>
+      </div>
+    </div>
+  </section>
+
+  <main id="tools" class="container-safe py-16 sm:py-24">
+    <div class="mb-14 flex flex-col justify-between gap-5 border-b border-line pb-8 sm:flex-row sm:items-end">
+      <div><p class="eyebrow">The toolbox</p><h2 class="mt-3 text-3xl sm:text-4xl">What can we help with?</h2></div>
+      <p class="max-w-xs text-sm leading-6 text-ink-soft">No accounts. No clutter. Just a useful little nudge when you need one.</p>
+    </div>
+
+    <div class="space-y-20">
+      {Object.entries(TOOL_CATEGORIES).map(([key, category], categoryIndex) => (
+        <section aria-labelledby={`${key}-heading`}>
+          <div class="mb-7 flex items-end justify-between gap-5">
+            <div><p class="eyebrow">0{categoryIndex + 1}</p><h2 id={`${key}-heading`} class="mt-2 text-2xl sm:text-3xl">{category.name}</h2></div>
+            <p class="hidden max-w-xs text-right text-sm leading-6 text-ink-soft sm:block">{category.description}</p>
+          </div>
+          <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {category.tools.map((tool, toolIndex) => <ToolCard tool={tool} accent={categoryIndex === 0 && toolIndex === 0 ? 'blue' : toolIndex === 1 ? 'soft' : 'plain'} />)}
+          </div>
+        </section>
+      ))}
+    </div>
+  </main>
+
+  <section class="border-y border-line bg-wash">
+    <div class="container-safe grid gap-8 py-14 md:grid-cols-3">
+      <div><p class="eyebrow">01 / Fast</p><p class="mt-3 text-sm leading-6 text-ink-soft">Open a tool and get to the useful bit immediately.</p></div>
+      <div><p class="eyebrow">02 / Private</p><p class="mt-3 text-sm leading-6 text-ink-soft">Your lists stay in your browser unless you choose to share a result.</p></div>
+      <div><p class="eyebrow">03 / Fair</p><p class="mt-3 text-sm leading-6 text-ink-soft">Random choices use the browser's secure random source.</p></div>
+    </div>
+  </section>
+</Layout>

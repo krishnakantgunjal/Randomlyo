@@ -1,0 +1,182 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ToolLayout from '../components/ToolLayout.astro';
+import Button from '../components/Button.astro';
+import ListInput from '../components/ListInput.astro';
+import ResultDisplay from '../components/ResultDisplay.astro';
+import CopyButton from '../components/CopyButton.astro';
+
+const title = 'Who Goes First? - Random Turn Order | Randomlyo';
+const description = 'Enter names and randomly decide who goes first in games, meetings, or any activity.';
+---
+
+<Layout title={title} description={description}>
+  <ToolLayout
+    title="Who Goes First?"
+    description="Enter names and randomly select who goes first."
+    toolId="whoGoesFirst"
+  >
+    <div class="max-w-2xl mx-auto">
+      <!-- Input Section -->
+      <div class="mb-8">
+        <label class="block text-sm font-bold text-ink-soft mb-3">Enter Names (separate by comma or newline)</label>
+        <ListInput
+          id="namesList"
+          defaultValue="Player 1, Player 2, Player 3"
+        />
+      </div>
+
+      <!-- Result Display -->
+      <div id="resultContainer" class="hidden mb-8 rounded-xl">
+        <ResultDisplay
+          title="Goes First"
+          result=""
+          class="mb-8"
+        >
+          <CopyButton label="Copy Name" />
+        </ResultDisplay>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+        <Button
+          variant="primary"
+          size="lg"
+          id="selectBtn"
+          class="flex-1"
+        >
+          Select
+        </Button>
+        <Button
+          variant="secondary"
+          size="lg"
+          id="nextBtn"
+          class="flex-1"
+          disabled
+        >
+          Next
+        </Button>
+        <Button
+          variant="secondary"
+          size="lg"
+          id="resetBtn"
+          class="flex-1"
+        >
+          Reset
+        </Button>
+      </div>
+
+      <!-- Error Message -->
+      <div id="errorContainer" class="hidden mb-4 border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+        <p class="text-red-700 text-sm" id="errorMessage"></p>
+      </div>
+
+      <!-- Common Uses -->
+      <section class="legacy-section mb-12">
+        <h2 class="text-2xl font-bold mb-6">Common Uses</h2>
+        <ul class="space-y-3 text-ink-soft">
+          <li class="flex items-start gap-3">
+            <span class="text-brand-deep font-bold">✓</span>
+            <span>Board games - decide who takes the first turn</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-brand-deep font-bold">✓</span>
+            <span>Sports - random team kick-off or serve order</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-brand-deep font-bold">✓</span>
+            <span>Meetings - random presentation order</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-brand-deep font-bold">✓</span>
+            <span>Classroom - random student selection</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-brand-deep font-bold">✓</span>
+            <span>Racing - random starting position</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- FAQ -->
+      <section class="legacy-section">
+        <h2 class="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
+        <div class="space-y-6">
+          <div>
+            <h3 class="font-bold mb-2">Can I see the full turn order?</h3>
+            <p class="text-ink-soft">The current version shows one person at a time. Click Next to reveal the next person.</p>
+          </div>
+          <div>
+            <h3 class="font-bold mb-2">How many names can I add?</h3>
+            <p class="text-ink-soft">You can add as many names as you want. There's no limit.</p>
+          </div>
+          <div>
+            <h3 class="font-bold mb-2">Does it work offline?</h3>
+            <p class="text-ink-soft">Yes, completely offline. All processing happens on your device.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </ToolLayout>
+</Layout>
+
+<script>
+  import { validateList } from '../lib/utils';
+  import { shuffleArray } from '../lib/random';
+  import { revealResult } from '../lib/effects';
+
+  const namesList = document.getElementById('namesList') as HTMLTextAreaElement;
+  const selectBtn = document.getElementById('selectBtn') as HTMLButtonElement;
+  const nextBtn = document.getElementById('nextBtn') as HTMLButtonElement;
+  const resetBtn = document.getElementById('resetBtn') as HTMLButtonElement;
+  const resultContainer = document.getElementById('resultContainer') as HTMLElement;
+  const errorContainer = document.getElementById('errorContainer') as HTMLElement;
+  const errorMessage = document.getElementById('errorMessage') as HTMLElement;
+
+  let currentOrder: string[] = [];
+  let currentIndex = 0;
+
+  selectBtn.addEventListener('click', () => {
+    const validation = validateList(namesList.value);
+    if (!validation.valid) {
+      errorMessage.textContent = validation.error || 'Invalid input';
+      errorContainer.classList.remove('hidden');
+      return;
+    }
+
+    errorContainer.classList.add('hidden');
+    currentOrder = shuffleArray(validation.items);
+    currentIndex = 0;
+
+    displayCurrent(true);
+    nextBtn.disabled = false;
+  });
+
+  nextBtn.addEventListener('click', () => {
+    if (currentIndex < currentOrder.length - 1) {
+      currentIndex++;
+      displayCurrent();
+    } else {
+      errorMessage.textContent = 'You\'ve reached the end of the order';
+      errorContainer.classList.remove('hidden');
+      nextBtn.disabled = true;
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    namesList.value = '';
+    resultContainer.classList.add('hidden');
+    errorContainer.classList.add('hidden');
+    nextBtn.disabled = true;
+    currentOrder = [];
+    currentIndex = 0;
+  });
+
+  function displayCurrent(celebrate = false) {
+    const resultElement = resultContainer.querySelector('[data-result-content]');
+    if (resultElement) {
+      resultElement.textContent = currentOrder[currentIndex];
+    }
+    revealResult(resultContainer, { celebrate });
+  }
+</script>

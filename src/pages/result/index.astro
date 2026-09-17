@@ -1,0 +1,50 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const title = 'Shared Result | Randomlyo';
+const description = 'A result shared from Randomlyo.';
+---
+
+<Layout title={title} description={description}>
+  <div class="py-16 sm:py-24">
+    <div class="container-safe max-w-2xl text-center">
+      <p class="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600 mb-4">Randomlyo result</p>
+      <h1 class="text-4xl sm:text-5xl font-bold mb-4" id="resultTitle">Shared result</h1>
+      <p class="text-gray-600 mb-10" id="resultTool">A result created with Randomlyo.</p>
+
+      <div class="border-2 border-blue-200 bg-blue-50 rounded-lg p-8 mb-8">
+        <p class="text-4xl sm:text-5xl font-bold break-words" id="resultValue">Loading...</p>
+      </div>
+
+      <div class="flex flex-wrap justify-center gap-3">
+        <button type="button" id="tryAgainButton" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+          Try Again
+        </button>
+        <a href="/" class="px-6 py-3 border-2 border-gray-300 hover:border-gray-400 text-gray-900 rounded-lg font-medium transition-colors">
+          Create Your Own
+        </a>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const tools: Record<string, { name: string; url: string }> = {
+    'random-name-picker': { name: 'Random Name Picker', url: '/random-name-picker/' },
+    'giveaway-winner-picker': { name: 'Giveaway Winner Picker', url: '/giveaway-winner-picker/' },
+    'random-picker': { name: 'Random Picker Wheel', url: '/random-picker/' },
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  const toolId = params.get('tool') || '';
+  const result = params.get('result') || 'No result found';
+  const tool = tools[toolId];
+
+  document.getElementById('resultValue')!.textContent = result;
+  document.getElementById('resultTitle')!.textContent = tool?.name || 'Shared result';
+  document.getElementById('resultTool')!.textContent = tool ? `Shared from ${tool.name}.` : 'A result created with Randomlyo.';
+
+  document.getElementById('tryAgainButton')?.addEventListener('click', () => {
+    window.location.href = tool?.url || '/';
+  });
+</script>

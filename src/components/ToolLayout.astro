@@ -1,0 +1,48 @@
+---
+import type { Tool } from '../data/tools';
+import { getTool } from '../data/tools';
+import RelatedTools from './RelatedTools.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  toolId: string;
+  children?: any;
+}
+
+const { title, description, toolId } = Astro.props;
+const tool = getTool(toolId);
+---
+
+<div class={`tool-page tool-${toolId} bg-wash/40`}>
+  <section class="border-b border-line bg-white py-12 sm:py-16">
+    <div class="container-safe">
+      <a href="/#tools" class="eyebrow inline-flex items-center gap-2 hover:text-ink"><span aria-hidden="true">&lt;-</span> All tools</a>
+      <h1 class="mt-5 text-4xl sm:text-5xl">{title}</h1>
+      <p class="mt-4 max-w-2xl text-lg leading-8 text-ink-soft">{description}</p>
+    </div>
+  </section>
+
+  <section class="py-8 sm:py-12">
+    <div id="tool-workspace" class="container-safe">
+      <slot />
+    </div>
+  </section>
+
+  <div class="container-safe pb-16 sm:pb-24">
+    {tool && <RelatedTools toolId={toolId} />}
+  </div>
+</div>
+
+<style is:global>
+  /*
+   * Some older tool pages still carry their original "Common Uses" / FAQ
+   * blocks in the markup, but those tools now render as a two-panel workspace.
+   * The blocks stay in the HTML for search engines but are not displayed.
+   * This targets them by class rather than by tag so new <section> panels in
+   * the workspace are unaffected.
+   */
+  #tool-workspace .legacy-section {
+    display: none;
+  }
+</style>

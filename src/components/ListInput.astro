@@ -1,0 +1,213 @@
+---
+interface Props {
+  placeholder?: string;
+  defaultValue?: string;
+  id?: string;
+  name?: string;
+  class?: string;
+  /**
+   * 'chips' (default) renders entries as removable tags.
+   * 'textarea' keeps the original multi-line box.
+   */
+  mode?: 'chips' | 'textarea';
+  /** Accessible label for the chip entry field. */
+  entryLabel?: string;
+}
+
+const {
+  placeholder = 'Alice, Bob, Charlie',
+  defaultValue = '',
+  id,
+  name,
+  class: className = '',
+  mode = 'chips',
+  entryLabel = 'Add a name, then press Enter',
+} = Astro.props;
+
+const baseClasses = 'w-full px-4 py-3 border border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-deep focus:border-brand-deep transition-colors duration-200 resize-y min-h-[120px] text-ink placeholder:text-ink-soft/60';
+const textareaClasses = `${baseClasses} ${className}`;
+
+const chipRootClasses = `flex min-h-12 w-full flex-wrap items-center gap-2 rounded-xl border border-line bg-white p-2.5 transition-colors duration-200 focus-within:border-brand-deep focus-within:ring-2 focus-within:ring-brand-deep ${className}`;
+
+const chipClasses = 'inline-flex max-w-full items-center gap-1.5 rounded-full border border-line bg-wash py-1 pl-3 pr-1.5 text-sm font-semibold text-ink';
+const chipLabelClasses = 'max-w-[16rem] truncate';
+const chipRemoveClasses = 'grid h-5 w-5 shrink-0 place-items-center rounded-full text-ink-soft transition hover:bg-white hover:text-ink';
+
+const initialItems = defaultValue
+  .split(/[\n,]/)
+  .map((item) => item.trim())
+  .filter((item) => item.length > 0);
+
+const isChips = mode === 'chips';
+---
+
+{
+  !isChips && (
+    <textarea id={id} name={name} class={textareaClasses} placeholder={placeholder}>
+      {defaultValue}
+    </textarea>
+  )
+}
+
+{
+  isChips && (
+    <div data-list-input>
+      <div class={chipRootClasses}>
+        <div data-chip-layer class="contents">
+          {initialItems.map((item) => (
+            <span class={chipClasses}>
+              <span class={chipLabelClasses}>{item}</span>
+              <button type="button" class={chipRemoveClasses} aria-label={`Remove ${item}`}>
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <input
+          type="text"
+          data-chip-entry
+          class="min-w-[7rem] flex-1 bg-transparent px-1 py-1 text-sm font-semibold text-ink outline-none placeholder:text-ink-soft/60"
+          placeholder={initialItems.length ? 'Add another' : placeholder}
+          autocomplete="off"
+          aria-label={entryLabel}
+        />
+      </div>
+      <textarea
+        id={id}
+        name={name}
+        data-list-value
+        class="hidden"
+        tabindex="-1"
+        aria-hidden="true"
+      >{defaultValue}</textarea>
+    </div>
+  )
+}
+
+<script>
+  const CHIP_CLASSES =
+    'inline-flex max-w-full items-center gap-1.5 rounded-full border border-line bg-wash py-1 pl-3 pr-1.5 text-sm font-semibold text-ink';
+  const CHIP_REMOVE_CLASSES =
+    'grid h-5 w-5 shrink-0 place-items-center rounded-full text-ink-soft transition hover:bg-white hover:text-ink';
+
+  const parse = (text: string): string[] =>
+    text
+      .split(/[\n,]/)
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+
+  document.querySelectorAll<HTMLElement>('[data-list-input]').forEach((root) => {
+    const textarea = root.querySelector<HTMLTextAreaElement>('textarea[data-list-value]');
+    const chipLayer = root.querySelector<HTMLElement>('[data-chip-layer]');
+    const entry = root.querySelector<HTMLInputElement>('[data-chip-entry]');
+    if (!textarea || !chipLayer || !entry) return;
+
+    const valueDescriptor = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+    let store = textarea.value;
+    // Index from which chips should play their entrance animation; -1 = none.
+    let animateFrom = -1;
+
+    const items = () => parse(store);
+
+    const writeStore = (next: string) => {
+      store = next;
+      valueDescriptor?.set?.call(textarea, next);
+      render();
+    };
+
+    const render = () => {
+      const list = items();
+      chipLayer.replaceChildren();
+
+      list.forEach((item, index) => {
+        const chip = document.createElement('span');
+        chip.className =
+          index >= animateFrom && animateFrom >= 0 ? `${CHIP_CLASSES} chip-enter` : CHIP_CLASSES;
+
+        const label = document.createElement('span');
+        label.className = 'max-w-[16rem] truncate';
+        label.textContent = item;
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = CHIP_REMOVE_CLASSES;
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', `Remove ${item}`);
+        // Suppress the focus shift that precedes the click. Without this, clicking
+        // × blurs the entry field first; the blur handler commits whatever was
+        // typed and re-renders, which detaches this button before the click
+        // lands — so the removal silently never happened. It also keeps the
+        // caret in the entry field, so you can remove a chip and keep typing.
+        remove.addEventListener('mousedown', (event) => event.preventDefault());
+        remove.addEventListener('click', () => {
+          const next = items();
+          next.splice(index, 1);
+          animateFrom = -1;
+          writeStore(next.join(', '));
+        });
+
+        chip.append(label, remove);
+        chipLayer.append(chip);
+      });
+
+      animateFrom = -1;
+      entry.placeholder = list.length ? 'Add another' : entry.dataset.originalPlaceholder || 'Add an option';
+    };
+
+    entry.dataset.originalPlaceholder = entry.placeholder;
+
+    const addFrom = (text: string) => {
+      const incoming = parse(text);
+      entry.value = '';
+      if (!incoming.length) return;
+      const next = items().concat(incoming);
+      animateFrom = next.length - incoming.length;
+      writeStore(next.join(', '));
+    };
+
+    entry.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        addFrom(entry.value);
+      } else if (event.key === 'Backspace' && entry.value === '') {
+        // Backspace on an empty field removes the most recent chip.
+        const list = items();
+        if (!list.length) return;
+        event.preventDefault();
+        animateFrom = -1;
+        writeStore(list.slice(0, -1).join(', '));
+      }
+    });
+
+    // Splitting a pasted list into individual chips is the whole point — do it
+    // without making the user hunt for a "paste a list" affordance.
+    entry.addEventListener('paste', (event) => {
+      const pasted = event.clipboardData?.getData('text') ?? '';
+      if (!/[\n,]/.test(pasted)) return;
+      event.preventDefault();
+      addFrom(pasted);
+    });
+
+    // Don't silently drop text the user typed but never committed.
+    entry.addEventListener('blur', () => {
+      if (entry.value.trim()) addFrom(entry.value);
+    });
+
+    // Pages read and write `.value` directly (validateList, reset buttons). Keep
+    // those reads working and make external writes refresh the chips.
+    if (valueDescriptor) {
+      Object.defineProperty(textarea, 'value', {
+        configurable: true,
+        get: () => store,
+        set: (next: string) => {
+          animateFrom = -1;
+          store = next == null ? '' : String(next);
+          valueDescriptor.set?.call(textarea, store);
+          render();
+        },
+      });
+    }
+
+    render();
+  });
+</script>

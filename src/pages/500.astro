@@ -1,0 +1,27 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Something Went Wrong" description="Randomlyo encountered an unexpected error.">
+  <div class="py-24 sm:py-32">
+    <div class="container-safe text-center">
+      <h1 class="mb-4 text-6xl font-bold text-ink sm:text-7xl">500</h1>
+      <h2 class="mb-6 text-3xl font-bold">Something Went Wrong</h2>
+      <p class="mx-auto mb-8 max-w-md text-lg text-ink-soft">
+        Randomlyo hit an unexpected error. Please try again or return home.
+      </p>
+      <div class="flex flex-wrap justify-center gap-3">
+        <button
+          type="button"
+          onclick="location.reload()"
+          class="secondary-action"
+        >
+          Try Again
+        </button>
+        <a href="/" class="primary-action">
+          Go Home
+        </a>
+      </div>
+    </div>
+  </div>
+</Layout>

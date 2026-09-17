@@ -1,0 +1,57 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ToolLayout from '../components/ToolLayout.astro';
+
+const title = 'Coin Toss - Heads or Tails | Randomlyo';
+const description = 'Flip a virtual coin for a fast, fair decision.';
+---
+
+<Layout title={title} description={description}>
+  <ToolLayout title="Coin Toss" description="Flip a virtual coin for a fast, fair decision." toolId="coinToss">
+    <div class="mx-auto max-w-2xl">
+      <section class="surface bg-white p-6 text-center sm:p-10" aria-live="polite">
+        <p class="eyebrow">Make the call</p>
+        <div id="coin" class="mx-auto mt-8 grid h-44 w-44 place-items-center rounded-full border-[10px] border-brand bg-wash text-3xl font-bold text-ink shadow-[0_0_0_2px_#7e93eb] sm:h-52 sm:w-52" style="transform-style: preserve-3d;" aria-label="Coin">?</div>
+        <p id="result" class="mt-8 min-h-14 text-5xl font-bold text-ink sm:text-6xl"></p>
+        <button id="flipBtn" type="button" class="primary-action mt-8 min-w-52">Flip coin</button>
+        <button id="resetBtn" type="button" class="mt-5 block w-full text-sm font-bold text-ink-soft underline decoration-line underline-offset-4 hover:text-ink">Reset</button>
+        <div class="mt-9 grid grid-cols-2 gap-3 border-t border-line pt-6 text-sm"><div><p class="text-ink-soft">Heads</p><p id="heads" class="mt-1 text-2xl font-bold">0</p></div><div><p class="text-ink-soft">Tails</p><p id="tails" class="mt-1 text-2xl font-bold">0</p></div></div>
+      </section>
+    </div>
+  </ToolLayout>
+</Layout>
+
+<style>
+  @keyframes flip {
+    0% { transform: rotateY(0deg); }
+    100% { transform: rotateY(1800deg); }
+  }
+
+  .flipping {
+    animation: flip 600ms cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+</style>
+
+<script>
+  import { flipCoin } from '../lib/random';
+  import { revealResult } from '../lib/effects';
+  const coin = document.getElementById('coin') as HTMLElement; const result = document.getElementById('result') as HTMLElement; const heads = document.getElementById('heads') as HTMLElement; const tails = document.getElementById('tails') as HTMLElement; let headCount = 0; let tailCount = 0; let isFlipping = false;
+  document.getElementById('flipBtn')?.addEventListener('click', () => {
+    if (isFlipping) return;
+    isFlipping = true;
+    const isHeads = flipCoin();
+    coin.classList.add('flipping');
+    result.textContent = '';
+    setTimeout(() => {
+      coin.classList.remove('flipping');
+      coin.style.transform = `rotateY(${isHeads ? 0 : 180}deg)`;
+      coin.textContent = isHeads ? 'H' : 'T';
+      result.textContent = isHeads ? 'Heads' : 'Tails';
+      revealResult(result);
+      if (isHeads) heads.textContent = String(++headCount);
+      else tails.textContent = String(++tailCount);
+      isFlipping = false;
+    }, 600);
+  });
+  document.getElementById('resetBtn')?.addEventListener('click', () => { headCount = 0; tailCount = 0; heads.textContent = '0'; tails.textContent = '0'; coin.textContent = '?'; result.textContent = ''; coin.style.transform = 'rotateY(0deg)'; });
+</script>

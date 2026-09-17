@@ -1,0 +1,188 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ToolLayout from '../components/ToolLayout.astro';
+
+const title = 'Dice Roller - Roll Dice Online | Randomlyo';
+const description = 'Roll any dice combination. D6, D20, D100, and more. Perfect for games.';
+---
+
+<Layout title={title} description={description}>
+  <ToolLayout
+    title="Dice Roller"
+    description="Roll any type of dice, any number of times."
+    toolId="diceRoller"
+  >
+    <div class="grid items-start gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+      <section class="surface p-5 sm:p-7" aria-labelledby="dice-settings">
+        <p class="eyebrow">Dice setup</p>
+        <h2 id="dice-settings" class="mt-2 text-xl">Choose your dice</h2>
+
+        <label class="mt-6 block text-sm font-bold text-ink-soft" for="numDice">
+          Number of dice
+          <input
+            id="numDice"
+            type="number"
+            min="1"
+            value="1"
+            class="mt-2 min-h-11 w-full rounded-xl border border-line bg-white px-3 text-ink"
+          />
+        </label>
+
+        <label class="mt-5 block text-sm font-bold text-ink-soft" for="diceType">
+          Dice type
+          <select
+            id="diceType"
+            class="mt-2 min-h-11 w-full rounded-xl border border-line bg-white px-3 text-sm font-semibold text-ink"
+          >
+            <option value="6">D6 (6 sides)</option>
+            <option value="4">D4 (4 sides)</option>
+            <option value="8">D8 (8 sides)</option>
+            <option value="10">D10 (10 sides)</option>
+            <option value="12">D12 (12 sides)</option>
+            <option value="20">D20 (20 sides)</option>
+            <option value="100">D100 (100 sides)</option>
+          </select>
+        </label>
+
+        <button id="rollBtn" type="button" class="primary-action mt-7 w-full">Roll dice <span aria-hidden="true">-&gt;</span></button>
+        <button id="resetBtn" type="button" class="mt-4 w-full text-sm font-bold text-ink-soft underline decoration-line underline-offset-4 hover:text-ink">Reset</button>
+        <p id="errorMessage" class="mt-4 hidden border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert"></p>
+      </section>
+
+      <section class="surface flex min-h-[25rem] flex-col justify-center bg-white p-5 text-center sm:p-8" aria-live="polite">
+        <p class="eyebrow">The roll</p>
+        <div id="emptyState">
+          <p class="mt-5 text-5xl" aria-hidden="true">🎲</p>
+          <p class="mt-4 text-sm text-ink-soft">Your dice will land here.</p>
+        </div>
+        <div id="resultContainer" class="hidden">
+          <div id="rollsList" class="mt-5 flex flex-wrap justify-center gap-2"></div>
+          <p class="eyebrow mt-8">Total</p>
+          <p id="totalResult" class="mt-2 text-5xl font-bold text-ink sm:text-6xl"></p>
+          <div class="mt-8 flex flex-wrap justify-center gap-2">
+            <button id="rollAgainBtn" type="button" class="primary-action">Roll again</button>
+            <button id="copyBtn" type="button" class="secondary-action">Copy total</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Kept for search engines; the workspace itself is a two-panel layout. -->
+    <div class="mx-auto mt-12 max-w-2xl">
+      <!-- Common Dice -->
+      <section class="legacy-section mb-12">
+        <h2 class="text-2xl font-bold mb-6">Common Dice Notation</h2>
+        <ul class="space-y-3 text-ink-soft">
+          <li class="flex items-start gap-3">
+            <span class="font-mono font-bold text-brand-deep">2d6</span>
+            <span>Roll 2 six-sided dice</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="font-mono font-bold text-brand-deep">1d20</span>
+            <span>Roll 1 twenty-sided die (D&amp;D attack rolls)</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="font-mono font-bold text-brand-deep">3d4</span>
+            <span>Roll 3 four-sided dice</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="font-mono font-bold text-brand-deep">4d6</span>
+            <span>Roll 4 six-sided dice (D&amp;D ability scores)</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- FAQ -->
+      <section class="legacy-section">
+        <h2 class="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
+        <div class="space-y-6">
+          <div>
+            <h3 class="font-bold mb-2">What dice types are available?</h3>
+            <p class="text-ink-soft">We support D4, D6, D8, D10, D12, D20, and D100. If you need other dice types, let us know!</p>
+          </div>
+          <div>
+            <h3 class="font-bold mb-2">Can I roll many dice at once?</h3>
+            <p class="text-ink-soft">Yes, you can roll as many dice as you want. There's no limit.</p>
+          </div>
+          <div>
+            <h3 class="font-bold mb-2">How are these rolls random?</h3>
+            <p class="text-ink-soft">We use cryptographic randomization to ensure each roll is fair and unpredictable.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </ToolLayout>
+</Layout>
+
+<script>
+  import { rollMultipleDice } from '../lib/random';
+  import { revealResult } from '../lib/effects';
+
+  const numDice = document.getElementById('numDice') as HTMLInputElement;
+  const diceType = document.getElementById('diceType') as HTMLSelectElement;
+  const rollBtn = document.getElementById('rollBtn') as HTMLButtonElement;
+  const resetBtn = document.getElementById('resetBtn') as HTMLButtonElement;
+  const resultContainer = document.getElementById('resultContainer') as HTMLElement;
+  const emptyState = document.getElementById('emptyState') as HTMLElement;
+  const rollsList = document.getElementById('rollsList') as HTMLElement;
+  const totalResult = document.getElementById('totalResult') as HTMLElement;
+  const copyBtn = document.getElementById('copyBtn') as HTMLButtonElement;
+  const rollAgainBtn = document.getElementById('rollAgainBtn') as HTMLButtonElement;
+  const errorMessage = document.getElementById('errorMessage') as HTMLElement;
+
+  rollBtn.addEventListener('click', () => {
+    const count = parseInt(numDice.value);
+    const sides = parseInt(diceType.value);
+
+    if (isNaN(count) || count < 1) {
+      errorMessage.textContent = 'Enter at least 1 die to roll.';
+      errorMessage.classList.remove('hidden');
+      return;
+    }
+    if (isNaN(sides) || sides < 2) {
+      errorMessage.textContent = 'Choose a dice type with at least 2 sides.';
+      errorMessage.classList.remove('hidden');
+      return;
+    }
+    errorMessage.classList.add('hidden');
+
+    const rolls = rollMultipleDice(count, sides);
+    const total = rolls.reduce((a, b) => a + b, 0);
+
+    rollsList.innerHTML = rolls.map(roll =>
+      `<span class="inline-block rounded-lg border border-line bg-wash px-3 py-2 text-sm font-bold text-ink">${roll}</span>`
+    ).join('');
+
+    totalResult.textContent = total.toString();
+    emptyState.classList.add('hidden');
+    revealResult(resultContainer);
+  });
+
+  rollAgainBtn.addEventListener('click', () => {
+    rollBtn.click();
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    const text = totalResult.textContent || '';
+    try {
+      await navigator.clipboard.writeText(text);
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = 'Copied';
+      setTimeout(() => {
+        copyBtn.textContent = originalText;
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    numDice.value = '1';
+    diceType.value = '6';
+    resultContainer.classList.add('hidden');
+    emptyState.classList.remove('hidden');
+    rollsList.innerHTML = '';
+    totalResult.textContent = '';
+    errorMessage.classList.add('hidden');
+  });
+</script>

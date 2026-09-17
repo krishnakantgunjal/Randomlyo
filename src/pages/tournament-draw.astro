@@ -1,0 +1,181 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ToolLayout from '../components/ToolLayout.astro';
+import ListInput from '../components/ListInput.astro';
+
+const title = 'Tournament Draw - Random Matchups | Randomlyo';
+const description = 'Generate random tournament matchups instantly. Perfect for competitions.';
+const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Team G, Team H';
+---
+
+<Layout title={title} description={description}>
+  <ToolLayout
+    title="Tournament Draw"
+    description="Generate random tournament matchups."
+    toolId="tournamentDraw"
+  >
+    <div class="grid items-start gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+      <section class="surface p-5 sm:p-7" aria-labelledby="tournament-field">
+        <p class="eyebrow">Tournament field</p>
+        <h2 id="tournament-field" class="mt-2 text-xl">Who is competing?</h2>
+        <ListInput
+          id="participantsList"
+          defaultValue={defaultParticipants}
+          placeholder="Team A, Team B, Team C"
+          entryLabel="Add a participant, then press Enter"
+          class="mt-5"
+        />
+        <p class="mt-3 text-xs text-ink-soft">Works best with an even number of participants.</p>
+        <button id="generateBtn" type="button" class="primary-action mt-7 w-full">Draw matchups <span aria-hidden="true">-&gt;</span></button>
+        <button id="resetBtn" type="button" class="mt-4 w-full text-sm font-bold text-ink-soft underline decoration-line underline-offset-4 hover:text-ink">Reset</button>
+        <p id="errorContainer" class="mt-4 hidden border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert"><span id="errorMessage"></span></p>
+      </section>
+
+      <section class="surface min-h-[25rem] bg-white p-5 sm:p-7" aria-live="polite">
+        <p class="eyebrow">Round 1 draw</p>
+        <div id="emptyState" class="py-20 text-center">
+          <p class="text-5xl" aria-hidden="true">🏆</p>
+          <p class="mt-4 text-sm text-ink-soft">Your matchups will appear here.</p>
+        </div>
+        <div id="resultContainer" class="mt-5 hidden space-y-3"></div>
+      </section>
+    </div>
+
+    <!-- Kept for search engines; the workspace itself is a two-panel layout. -->
+    <div class="mx-auto mt-12 max-w-2xl">
+      <section class="legacy-section mb-12 border border-line bg-wash p-4">
+        <h3 class="font-bold mb-2">Tournament Structure</h3>
+        <p class="text-sm text-ink-soft">
+          The current version generates a random first-round draw. After you complete Round 1, you can use this tool again with the winners to generate Round 2, and so on.
+        </p>
+      </section>
+
+      <!-- Common Uses -->
+      <section class="legacy-section mb-12">
+        <h2 class="text-2xl font-bold mb-6">Common Uses</h2>
+        <ul class="space-y-3 text-ink-soft">
+          <li class="flex items-start gap-3">
+            <span class="text-brand-deep font-bold">•</span>
+            <span>Sports tournament draws</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-brand-deep font-bold">•</span>
+            <span>Esports bracket generation</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-brand-deep font-bold">•</span>
+            <span>Game tournament matchups</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-brand-deep font-bold">•</span>
+            <span>Competition round pairings</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- FAQ -->
+      <section class="legacy-section">
+        <h2 class="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
+        <div class="space-y-6">
+          <div>
+            <h3 class="font-bold mb-2">What if I have an odd number of participants?</h3>
+            <p class="text-ink-soft">One participant will get a bye (automatic advancement). For the fairest tournament, an even number is recommended.</p>
+          </div>
+          <div>
+            <h3 class="font-bold mb-2">Can I use this for multiple rounds?</h3>
+            <p class="text-ink-soft">Yes, use it again with the Round 1 winners to generate Round 2 matchups, and so on.</p>
+          </div>
+          <div>
+            <h3 class="font-bold mb-2">Is this a true random draw?</h3>
+            <p class="text-ink-soft">Yes, participants are randomly paired using cryptographic randomization for fair matchups.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </ToolLayout>
+</Layout>
+
+<script>
+  import { validateList } from '../lib/utils';
+  import { shuffleArray } from '../lib/random';
+  import { revealResult } from '../lib/effects';
+
+  const participantsList = document.getElementById('participantsList') as HTMLTextAreaElement;
+  const generateBtn = document.getElementById('generateBtn') as HTMLButtonElement;
+  const resetBtn = document.getElementById('resetBtn') as HTMLButtonElement;
+  const resultContainer = document.getElementById('resultContainer') as HTMLElement;
+  const emptyState = document.getElementById('emptyState') as HTMLElement;
+  const errorContainer = document.getElementById('errorContainer') as HTMLElement;
+  const errorMessage = document.getElementById('errorMessage') as HTMLElement;
+
+  generateBtn.addEventListener('click', () => {
+    try {
+      const validation = validateList(participantsList.value);
+      if (!validation.valid) {
+        errorMessage.textContent = validation.error || 'Invalid input';
+        errorContainer.classList.remove('hidden');
+        return;
+      }
+
+      if (validation.items.length < 2) {
+        throw new Error('You need at least 2 participants for a tournament');
+      }
+
+      const shuffled = shuffleArray(validation.items);
+      const matchups: Array<[string, string | null]> = [];
+
+      for (let i = 0; i < shuffled.length; i += 2) {
+        if (i + 1 < shuffled.length) {
+          matchups.push([shuffled[i], shuffled[i + 1]]);
+        } else {
+          // Odd participant gets a bye
+          matchups.push([shuffled[i], null]);
+        }
+      }
+
+      resultContainer.innerHTML = matchups.map((matchup, index) => {
+        const [participant1, participant2] = matchup;
+        if (!participant2) {
+          return `
+            <article class="border border-line bg-wash p-4">
+              <p class="eyebrow">Match ${index + 1}</p>
+              <div class="mt-3 border border-brand-deep bg-white p-3 text-center">
+                <p class="font-bold text-ink">${participant1}</p>
+                <p class="mt-1 text-xs font-bold uppercase tracking-[0.18em] text-brand-deep">Bye - advances</p>
+              </div>
+            </article>
+          `;
+        }
+        return `
+          <article class="border border-line bg-wash p-4">
+            <p class="eyebrow">Match ${index + 1}</p>
+            <div class="mt-3 flex items-center gap-3">
+              <div class="flex-1 border border-line bg-white p-3 text-center">
+                <p class="text-sm font-semibold text-ink">${participant1}</p>
+              </div>
+              <div class="text-xs font-bold uppercase tracking-[0.18em] text-ink-soft">vs</div>
+              <div class="flex-1 border border-line bg-white p-3 text-center">
+                <p class="text-sm font-semibold text-ink">${participant2}</p>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      emptyState.classList.add('hidden');
+      revealResult(resultContainer);
+      errorContainer.classList.add('hidden');
+    } catch (err) {
+      errorMessage.textContent = err instanceof Error ? err.message : 'An error occurred';
+      errorContainer.classList.remove('hidden');
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    participantsList.value = '';
+    resultContainer.classList.add('hidden');
+    emptyState.classList.remove('hidden');
+    errorContainer.classList.add('hidden');
+    resultContainer.innerHTML = '';
+  });
+</script>

@@ -1,0 +1,52 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const title = 'Contact Randomlyo';
+const description = 'Get in touch with Randomlyo. Send us feedback, suggestions, or questions.';
+---
+
+<Layout title={title} description={description}>
+  <div class="py-16 sm:py-24">
+    <div class="container-safe max-w-2xl">
+      <h1 class="text-4xl sm:text-5xl font-bold mb-8">Contact Us</h1>
+
+      <p class="text-lg text-gray-700 mb-12">
+        We'd love to hear from you! If you have feedback, suggestions, bug reports, or just want to say hello, reach out to us.
+      </p>
+
+      <!-- Contact Options -->
+      <div class="space-y-8">
+        <div class="border-2 border-blue-200 rounded-lg p-8 bg-gradient-to-br from-blue-50 to-white">
+          <h2 class="text-2xl font-bold mb-3">Email</h2>
+          <p class="text-gray-700 mb-4">Send us an email with your message:</p>
+          <a href="mailto:hello@randomlyo.com" class="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+            hello@randomlyo.com
+          </a>
+        </div>
+
+        <div class="border-2 border-green-200 rounded-lg p-8 bg-gradient-to-br from-green-50 to-white">
+          <h2 class="text-2xl font-bold mb-3">Feedback</h2>
+          <p class="text-gray-700 mb-4">
+            Have a feature request? Found a bug? Let us know what you'd like to see improved.
+          </p>
+          <p class="text-sm text-gray-600">Email us with the subject line "Feature Request" or "Bug Report".</p>
+        </div>
+
+        <div class="border-2 border-purple-200 rounded-lg p-8 bg-gradient-to-br from-purple-50 to-white">
+          <h2 class="text-2xl font-bold mb-3">Privacy & Legal</h2>
+          <p class="text-gray-700 mb-4">
+            Questions about your privacy? Check our <a href="/privacy-policy/" class="text-blue-600 hover:underline">Privacy Policy</a> or <a href="/terms/" class="text-blue-600 hover:underline">Terms of Service</a>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Response Time -->
+      <div class="mt-12 p-6 bg-gray-50 rounded-lg border border-gray-200">
+        <h3 class="font-bold mb-2">Response Time</h3>
+        <p class="text-gray-700 text-sm">
+          We try to respond to all emails within 48 hours. For urgent matters, please note that as a small team, we may not always be able to respond immediately.
+        </p>
+      </div>
+    </div>
+  </div>
+</Layout>
