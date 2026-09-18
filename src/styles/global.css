@@ -89,10 +89,23 @@
   }
 }
 
+@keyframes diceRoll {
+  0% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-4px) rotate(-10deg); }
+  50% { transform: translateY(0) rotate(0); }
+  75% { transform: translateY(-2px) rotate(10deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+
 @layer utilities {
   /* Result entrance: apply when a result becomes visible. */
   .result-reveal {
     animation: resultReveal 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Dice roll animation: apply while rolling. */
+  .dice-rolling {
+    animation: diceRoll 150ms ease-in-out infinite;
   }
 
   /*
