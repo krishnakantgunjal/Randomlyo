@@ -72,7 +72,7 @@ export const TOOLS: Record<string, Tool> = {
     description: 'Flip a coin to get heads or tails.',
     category: 'decide',
     icon: 'coin',
-    related: ['whoGoesFirst', 'yesOrNoTool'],
+    related: ['whoGoesFirst', 'whatShouldWeEat'],
   },
   whoGoesFirst: {
     id: 'whoGoesFirst',
@@ -82,17 +82,7 @@ export const TOOLS: Record<string, Tool> = {
     description: 'Randomly decide who goes first.',
     category: 'decide',
     icon: 'people',
-    related: ['coinToss', 'yesOrNoTool'],
-  },
-  yesOrNoTool: {
-    id: 'yesOrNoTool',
-    name: 'Yes / No',
-    slug: 'yes-or-no',
-    url: '/yes-or-no/',
-    description: 'Ask a question and get a straight yes or no.',
-    category: 'decide',
-    icon: 'check',
-    related: ['coinToss', 'whoGoesFirst'],
+    related: ['coinToss', 'whatShouldWeEat'],
   },
   whatShouldWeEat: {
     id: 'whatShouldWeEat',
@@ -102,7 +92,7 @@ export const TOOLS: Record<string, Tool> = {
     description: 'Let Randomlyo choose dinner.',
     category: 'decide',
     icon: 'food',
-    related: ['yesOrNoTool', 'whoGoesFirst'],
+    related: ['coinToss', 'whoGoesFirst'],
   },
   diceRoller: {
     id: 'diceRoller',
@@ -125,7 +115,7 @@ export const TOOL_CATEGORIES = {
   decide: {
     name: 'DECIDE',
     description: 'Let randomness make the decision.',
-    tools: [TOOLS.coinToss, TOOLS.whoGoesFirst, TOOLS.yesOrNoTool, TOOLS.whatShouldWeEat],
+    tools: [TOOLS.coinToss, TOOLS.whoGoesFirst, TOOLS.whatShouldWeEat],
   },
   play: {
     name: 'PLAY & WIN',

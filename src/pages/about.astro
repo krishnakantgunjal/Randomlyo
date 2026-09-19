@@ -1,8 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { TOOL_CATEGORIES } from '../data/tools';
 
 const title = 'About Randomlyo';
 const description = 'About Randomlyo - Simple, fast, and fair random selection tools.';
+
+// Rendered from the registry rather than hand-listed, so the count, the
+// categories and the URLs cannot drift away from what the site actually ships.
+const categories = Object.values(TOOL_CATEGORIES);
+const toolCount = categories.reduce((total, category) => total + category.tools.length, 0);
 ---
 
 <Layout title={title} description={description}>
@@ -64,38 +70,19 @@ const description = 'About Randomlyo - Simple, fast, and fair random selection t
       <section class="mb-12">
         <h2 class="text-2xl font-bold mb-4">Our Tools</h2>
         <p class="text-gray-700 mb-6">
-          We provide 11 carefully designed tools, organized into 4 categories:
+          We provide {toolCount} carefully designed tools, organized into {categories.length} categories:
         </p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 class="font-bold mb-3 text-blue-600">PICK</h3>
-            <ul class="space-y-2 text-gray-700 text-sm">
-              <li>• <a href="/random-picker/" class="hover:text-blue-600">Random Picker / Wheel</a></li>
-              <li>• <a href="/random-name-picker/" class="hover:text-blue-600">Random Name Picker</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="font-bold mb-3 text-blue-600">GROUPS</h3>
-            <ul class="space-y-2 text-gray-700 text-sm">
-              <li>• <a href="/random-team-generator/" class="hover:text-blue-600">Random Team Generator</a></li>
-              <li>• <a href="/tournament-draw/" class="hover:text-blue-600">Tournament Draw</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="font-bold mb-3 text-blue-600">DECIDE</h3>
-            <ul class="space-y-2 text-gray-700 text-sm">
-              <li>• <a href="/coin-toss/" class="hover:text-blue-600">Coin Toss</a></li>
-              <li>• <a href="/who-goes-first/" class="hover:text-blue-600">Who Goes First?</a></li>
-              <li>• <a href="/yes-or-no/" class="hover:text-blue-600">Yes / No</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="font-bold mb-3 text-blue-600">RANDOMIZE</h3>
-            <ul class="space-y-2 text-gray-700 text-sm">
-              <li>• <a href="/random-number-generator/" class="hover:text-blue-600">Random Number Generator</a></li>
-              <li>• <a href="/dice-roller/" class="hover:text-blue-600">Dice Roller</a></li>
-            </ul>
-          </div>
+          {categories.map((category) => (
+            <div>
+              <h3 class="font-bold mb-3 text-blue-600">{category.name}</h3>
+              <ul class="space-y-2 text-gray-700 text-sm">
+                {category.tools.map((tool) => (
+                  <li>• <a href={tool.url} class="hover:text-blue-600">{tool.name}</a></li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </section>
 

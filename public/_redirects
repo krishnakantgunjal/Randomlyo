@@ -1,0 +1,7 @@
+# Redirects for Cloudflare Workers static assets.
+# Parsed from the deployed asset directory; not served as a file itself.
+# https://developers.cloudflare.com/workers/static-assets/redirects/
+
+# The Yes / No tool was removed. Coin Toss is its closest surviving
+# equivalent, so old links and search results land somewhere useful.
+/yes-or-no/ /coin-toss/ 301
