@@ -22,7 +22,7 @@ export const TOOLS: Record<string, Tool> = {
     description: 'Spin a custom wheel to choose one option.',
     category: 'pick',
     icon: 'wheel',
-    related: ['randomNamePicker', 'giveawayWinnerPicker'],
+    related: ['randomNamePicker', 'randomTeamGenerator'],
   },
   randomNamePicker: {
     id: 'randomNamePicker',
@@ -32,7 +32,7 @@ export const TOOLS: Record<string, Tool> = {
     description: 'Pick one or more names at random.',
     category: 'pick',
     icon: 'person',
-    related: ['randomPicker', 'giveawayWinnerPicker'],
+    related: ['randomPicker', 'randomTeamGenerator'],
   },
   randomNumberGenerator: {
     id: 'randomNumberGenerator',
@@ -52,17 +52,7 @@ export const TOOLS: Record<string, Tool> = {
     description: 'Split players into random teams quickly.',
     category: 'play',
     icon: 'people',
-    related: ['randomGroupGenerator', 'tournamentDraw'],
-  },
-  randomGroupGenerator: {
-    id: 'randomGroupGenerator',
-    name: 'Random Group Generator',
-    slug: 'random-group-generator',
-    url: '/random-group-generator/',
-    description: 'Divide people into random groups.',
-    category: 'play',
-    icon: 'people',
-    related: ['randomTeamGenerator', 'tournamentDraw'],
+    related: ['tournamentDraw', 'randomNamePicker'],
   },
   tournamentDraw: {
     id: 'tournamentDraw',
@@ -72,7 +62,7 @@ export const TOOLS: Record<string, Tool> = {
     description: 'Generate random matchups for tournaments.',
     category: 'play',
     icon: 'target',
-    related: ['randomTeamGenerator', 'randomGroupGenerator'],
+    related: ['randomTeamGenerator', 'coinToss'],
   },
   coinToss: {
     id: 'coinToss',
@@ -114,26 +104,6 @@ export const TOOLS: Record<string, Tool> = {
     icon: 'game',
     related: ['randomNumberGenerator'],
   },
-  giveawayWinnerPicker: {
-    id: 'giveawayWinnerPicker',
-    name: 'Giveaway / Random Winner Picker',
-    slug: 'giveaway-winner-picker',
-    url: '/giveaway-winner-picker/',
-    description: 'Select random winner(s) for giveaways.',
-    category: 'play',
-    icon: 'target',
-    related: ['randomNamePicker', 'randomPicker'],
-  },
-  randomGamePicker: {
-    id: 'randomGamePicker',
-    name: 'Random Game Picker',
-    slug: 'random-game-picker',
-    url: '/random-game-picker/',
-    description: "Can't decide what to play? Pick one at random.",
-    category: 'play',
-    icon: 'game',
-    related: ['randomPicker', 'randomNamePicker'],
-  },
 };
 
 export const TOOL_CATEGORIES = {
@@ -149,15 +119,8 @@ export const TOOL_CATEGORIES = {
   },
   play: {
     name: 'PLAY & WIN',
-    description: 'Randomize teams, games and winners.',
-    tools: [
-      TOOLS.randomTeamGenerator,
-      TOOLS.randomGroupGenerator,
-      TOOLS.tournamentDraw,
-      TOOLS.diceRoller,
-      TOOLS.giveawayWinnerPicker,
-      TOOLS.randomGamePicker,
-    ],
+    description: 'Randomize teams, brackets and dice rolls.',
+    tools: [TOOLS.randomTeamGenerator, TOOLS.tournamentDraw, TOOLS.diceRoller],
   },
 };
 
