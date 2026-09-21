@@ -3,43 +3,55 @@ import Layout from '../layouts/Layout.astro';
 import ToolLayout from '../components/ToolLayout.astro';
 import ListInput from '../components/ListInput.astro';
 
-const title = 'Tournament Draw - Random Matchups | Randomlyo';
-const description = 'Generate random tournament matchups instantly. Perfect for competitions.';
-const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Team G, Team H';
+const title = 'Tournament Draw — Random Matchups | Randomlyo';
+const description = 'Single-elimination bracket with random seeding, byes, and full propagation / undo.';
 ---
 
 <Layout title={title} description={description}>
-  <ToolLayout
-    title="Tournament Draw"
-    description="Generate random tournament matchups."
-    toolId="tournamentDraw"
-  >
-    <div class="grid items-start gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-      <section class="surface p-5 sm:p-7" aria-labelledby="tournament-field">
-        <p class="eyebrow">Tournament field</p>
-        <h2 id="tournament-field" class="mt-2 text-xl">Who is competing?</h2>
+  <ToolLayout title="Tournament Draw" description="Generate a random single-elimination bracket, then decide each match step by step." toolId="tournamentDraw">
+    <div class="grid items-start gap-5 lg:grid-cols-[minmax(320px,0.9fr)_1.2fr]">
+
+      <!-- PANEL 1: Participant input -->
+      <section class="surface p-5 sm:p-7" aria-labelledby="participant-heading">
+        <p class="eyebrow">Who is competing?</p>
+        <h2 id="participant-heading" class="mt-2 text-xl">Participants</h2>
+
         <ListInput
           id="participantsList"
-          defaultValue={defaultParticipants}
-          placeholder="Team A, Team B, Team C"
+          defaultValue=""
+          placeholder="Alice, Bob, Charlie, Dana"
           entryLabel="Add a participant, then press Enter"
           mode="chips"
           class="mt-5"
         />
-        <p class="mt-3 text-xs text-ink-soft">Works best with an even number of participants.</p>
-        <button id="generateBtn" type="button" class="primary-action mt-7 w-full">Draw matchups <span aria-hidden="true">-></span></button>
-        <button id="resetBtn" type="button" class="mt-4 w-full text-sm font-bold text-ink-soft underline decoration-line underline-offset-4 hover:text-ink">Reset</button>
-        <p id="errorContainer" class="mt-4 hidden border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert"><span id="errorMessage"></span></p>
+
+        <p class="mt-3 text-xs text-ink-soft">Works best with an even number of participants. 2 to 32 supported.</p>
+
+        <div class="mt-6 flex gap-3">
+          <button id="generateBtn" type="button" class="primary-action flex-1">Draw matchups <span aria-hidden="true">→</span></button>
+          <button id="resetBtn" type="button" class="outline-button flex-1">Reset</button>
+        </div>
+
+        <p id="errorContainer" class="mt-4 hidden border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+          <span id="errorMessage"></span>
+        </p>
       </section>
 
-      <section class="surface min-h-[25rem] bg-white p-5 sm:p-7 overflow-x-auto" aria-live="polite">
-        <p class="eyebrow">Tournament bracket</p>
+      <!-- PANEL 2: Bracket -->
+      <section class="surface min-h-[30rem] overflow-x-auto bg-white p-5 sm:p-7" aria-live="polite" aria-label="Tournament bracket">
+        <div class="flex items-center justify-between">
+          <p class="eyebrow">Tournament bracket</p>
+          <span id="progressLabel" class="text-xs text-ink-soft hidden"></span>
+        </div>
+
         <div id="emptyState" class="py-20 text-center">
           <p class="text-5xl" aria-hidden="true">🏆</p>
           <p class="mt-4 text-sm text-ink-soft">Your bracket will appear here.</p>
         </div>
-        <div id="bracketContainer" class="relative mt-8 min-w-[800px]"></div>
+
+        <div id="bracketContainer" class="relative hidden min-w-[860px]"></div>
       </section>
+
     </div>
   </ToolLayout>
 </Layout>
@@ -51,127 +63,204 @@ const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Tea
     createBracket,
     setWinner,
     roundName,
-    type Bracket,
+    champion,
+    bracketProgress,
     MIN_PARTICIPANTS,
-    MAX_PARTICIPANTS
+    MAX_PARTICIPANTS,
+    type Bracket,
   } from '../lib/bracket';
 
-  const participantsList = document.getElementById('participantsList') as HTMLTextAreaElement;
+  const UNIT = 96;        // vertical spacing factor
+  const CARD_H = 60;      // approximate card height
+  const COL_W = 200;      // column width
+
+  const participantsEl = document.getElementById('participantsList') as HTMLTextAreaElement;
   const generateBtn = document.getElementById('generateBtn') as HTMLButtonElement;
   const resetBtn = document.getElementById('resetBtn') as HTMLButtonElement;
   const bracketContainer = document.getElementById('bracketContainer') as HTMLElement;
   const emptyState = document.getElementById('emptyState') as HTMLElement;
   const errorContainer = document.getElementById('errorContainer') as HTMLElement;
   const errorMessage = document.getElementById('errorMessage') as HTMLElement;
+  const progressLabel = document.getElementById('progressLabel') as HTMLElement;
 
   let currentBracket: Bracket | null = null;
-  const UNIT = 80; // Vertical unit in pixels for card positioning
+
+  function computeTop(round: number, matchIndex: number): number {
+    // centerY = (matchIndex * 2^(round+1) + 2^round) * UNIT
+    const centerY = (matchIndex * Math.pow(2, round + 1) + Math.pow(2, round)) * UNIT;
+    return Math.round(centerY - CARD_H / 2);
+  }
+
+  function computeLeft(round: number): number {
+    return round * COL_W + 24; // small offset for labels
+  }
+
+  function getPlaceholderText(round: number, matchIndex: number, side: 0 | 1): string {
+    const prevRound = round - 1;
+    const prevMatchIdx = matchIndex * 2 + side;
+    return `Winner of Match ${prevMatchIdx + 1}`;
+  }
 
   function renderBracket() {
     if (!currentBracket) return;
 
+    const rounds = currentBracket.rounds;
     bracketContainer.innerHTML = '';
+    bracketContainer.classList.remove('hidden');
+    emptyState.classList.add('hidden');
 
-    // Add round labels
-    const labels = document.createElement('div');
-    labels.className = 'flex mb-4';
-    currentBracket.rounds.forEach((round, rIndex) => {
-        const label = document.createElement('div');
-        label.className = 'w-40 text-center font-bold text-ink-soft text-sm';
-        label.textContent = roundName(round.length);
-        label.style.marginLeft = rIndex === 0 ? '0' : '40px'; // 200px column - 160px width
-        labels.appendChild(label);
+    // Round labels row
+    const labelRow = document.createElement('div');
+    labelRow.className = 'flex mb-3 items-end';
+    rounds.forEach((_, rIndex) => {
+      const lbl = document.createElement('div');
+      lbl.className = 'w-[180px] pl-6 text-xs font-bold uppercase tracking-wide text-ink-soft';
+      lbl.style.width = `${COL_W}px`;
+      lbl.textContent = roundName(rounds[rIndex].length);
+      lbl.style.paddingLeft = rIndex === 0 ? '0' : `${COL_W}px`;
+      labelRow.appendChild(lbl);
     });
-    bracketContainer.appendChild(labels);
-    const firstRoundMatches = currentBracket.rounds[0].length;
-    bracketContainer.style.height = `${firstRoundMatches * 2 * UNIT}px`;
+    bracketContainer.appendChild(labelRow);
 
-    // Draw connector lines
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.className = "absolute top-0 left-0 pointer-events-none";
-    svg.style.width = "100%";
-    svg.style.height = "100%";
+    // SVG connector layer
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('absolute', 'top-0', 'left-0', 'pointer-events-none');
+    svg.style.zIndex = '0';
+    svg.style.width = '100%';
+    svg.style.height = '100%';
     bracketContainer.appendChild(svg);
 
-    currentBracket.rounds.forEach((round, rIndex) => {
+    // Draw connector lines
+    for (let r = 0; r < rounds.length - 1; r++) {
+      for (let m = 0; m < rounds[r].length; m++) {
+        const nextMatch = Math.floor(m / 2);
+        const nextSide = m % 2;
+        const startX = computeLeft(r) + 180; // right edge of card in round r
+        const startY = computeTop(r, m) + CARD_H / 2 + 20; // below card
+        const endX = computeLeft(r + 1) + 6; // left edge of card in next round
+        const endY = computeTop(r + 1, nextMatch) + CARD_H / 2 + 12;
+
+        // Create a simple elbow connector
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const midX = startX + (endX - startX) / 2;
+        const d = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
+        path.setAttribute('d', d);
+        path.setAttribute('stroke', '#d5d8dc');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('fill', 'none');
+        svg.appendChild(path);
+      }
+    }
+
+    // Render match cards for each round
+    rounds.forEach((round, rIndex) => {
       round.forEach((match, mIndex) => {
-        const top = (mIndex * (2 ** (rIndex + 1)) + (2 ** rIndex) - 0.5) * UNIT + 40; // +40 for labels
-        const left = rIndex * 200; // Column width
+        const leftPos = computeLeft(rIndex);
+        const topPos = computeTop(rIndex, mIndex);
 
         const card = document.createElement('div');
-        card.className = 'absolute w-40 surface border border-line rounded shadow-sm';
-        card.style.top = `${top}px`;
-        card.style.left = `${left}px`;
+        card.className = 'absolute z-10 w-[180px] rounded-xl border border-line bg-white shadow-sm';
+        card.style.left = `${leftPos}px`;
+        card.style.top = `${topPos}px`;
 
         const [p1, p2] = match.players;
 
-        const getPlayerDisplay = (player: string | null, side: 0 | 1) => {
-          if (player) return player;
-          if (match.bye) return 'Bye';
-          // Placeholder: find which match feeds this slot
-          // For round > 0, match `m` in round `r` takes winners from
-          // match `2*m` and `2*m+1` of round `r-1`.
-          const prevRound = rIndex - 1;
-          const prevMatchIdx = mIndex * 2 + side;
-          return `Winner of Round ${prevRound + 1} Match ${prevMatchIdx + 1}`;
+        const buildSideButton = (side: 0 | 1, displayName: string) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 truncate focus:outline-none focus:ring-2 focus:ring-brand-deep focus:ring-offset-1';
+          btn.dataset.round = String(match.round);
+          btn.dataset.match = String(match.index);
+          btn.dataset.side = String(side);
+
+          if (match.bye) {
+            btn.classList.add('bg-wash', 'text-ink-soft');
+          } else if (match.winner === side) {
+            btn.classList.add('bg-brand/10', 'font-bold', 'text-ink');
+          } else if (match.winner === null) {
+            btn.classList.add('hover:bg-wash', 'text-ink');
+          } else {
+            // Eliminated
+            btn.classList.add('text-ink-soft', 'line-through', 'opacity-60');
+          }
+
+          btn.textContent = displayName || '—';
+          return btn;
         };
 
+        const nameA = p1 ?? (match.bye ? 'Bye' : getPlaceholderText(match.round, match.index, 0));
+        const nameB = p2 ?? (match.bye ? 'Bye' : getPlaceholderText(match.round, match.index, 1));
+
         card.innerHTML = `
-            <div class="divide-y divide-line">
-                <button type="button" data-round="${match.round}" data-match="${match.index}" data-side="0"
-                    class="w-full p-2 text-sm text-left truncate ${match.winner === 0 ? 'bg-brand/10 font-bold' : 'hover:bg-wash'} ${!p1 ? 'text-ink-soft italic' : ''}">
-                    ${getPlayerDisplay(p1, 0)}
-                </button>
-                <button type="button" data-round="${match.round}" data-match="${match.index}" data-side="1"
-                    class="w-full p-2 text-sm text-left truncate ${match.winner === 1 ? 'bg-brand/10 font-bold' : 'hover:bg-wash'} ${!p2 ? 'text-ink-soft italic' : ''}">
-                    ${getPlayerDisplay(p2, 1)}
-                </button>
-            </div>
+          <div class="divide-y divide-line rounded-xl overflow-hidden">
+            <div class="border-b border-line bg-wash/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink-soft">Match ${mIndex + 1}</div>
+          </div>
         `;
+
+        // Insert buttons after inner divider header
+        const divider = card.querySelector('.divide-y')!;
+        divider.appendChild(buildSideButton(0, nameA));
+        divider.appendChild(buildSideButton(1, nameB));
+
+        // Bye styling
+        if (match.bye) {
+          const byeTag = document.createElement('span');
+          byeTag.className = 'absolute -right-1 -top-1 rounded-full bg-brand-deep px-2 py-0.5 text-[9px] font-extrabold text-white shadow';
+          byeTag.textContent = 'BYE';
+          card.appendChild(byeTag);
+        }
+
         bracketContainer.appendChild(card);
       });
     });
 
-    // Re-attach listeners
-    bracketContainer.querySelectorAll('button[data-round]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const target = e.currentTarget as HTMLButtonElement;
-        const round = parseInt(target.dataset.round!);
-        const match = parseInt(target.dataset.match!);
-        const side = parseInt(target.dataset.side!) as 0 | 1;
-
-        if (currentBracket && setWinner(currentBracket, round, match, side)) {
-          renderBracket();
-        }
+    // Re-attach click listeners
+    bracketContainer.querySelectorAll('button[data-round]').forEach((btn) => {
+      const b = btn as HTMLButtonElement;
+      b.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!currentBracket) return;
+        const r = parseInt(b.dataset.round!, 10);
+        const m = parseInt(b.dataset.match!, 10);
+        const s = parseInt(b.dataset.side!, 10) as 0 | 1;
+        setWinner(currentBracket, r, m, s);
+        renderBracket();
       });
     });
+
+    // Update progress
+    if (currentBracket) {
+      const prog = bracketProgress(currentBracket);
+      progressLabel.classList.remove('hidden');
+      progressLabel.textContent = `${prog.decided} / ${prog.total} decided`;
+    }
   }
 
   generateBtn.addEventListener('click', () => {
     try {
-      const validation = validateList(participantsList.value);
-      if (!validation.valid || validation.items.length < MIN_PARTICIPANTS || validation.items.length > MAX_PARTICIPANTS) {
-        throw new Error(validation.error || `Please enter between ${MIN_PARTICIPANTS} and ${MAX_PARTICIPANTS} participants.`);
+      const result = validateList(participantsEl.value);
+      if (!result.valid) throw new Error(result.error || 'Enter participants');
+      const items = result.items;
+      if (items.length < MIN_PARTICIPANTS || items.length > MAX_PARTICIPANTS) {
+        throw new Error(`Enter between ${MIN_PARTICIPANTS} and ${MAX_PARTICIPANTS} participants.`);
       }
-
-      const shuffled = shuffleArray(validation.items);
+      const shuffled = shuffleArray(items);
       currentBracket = createBracket(shuffled);
-
-      emptyState.classList.add('hidden');
       errorContainer.classList.add('hidden');
       renderBracket();
     } catch (err) {
-      errorMessage.textContent = err instanceof Error ? err.message : 'An error occurred';
+      errorMessage.textContent = err instanceof Error ? err.message : 'Error';
       errorContainer.classList.remove('hidden');
     }
   });
 
   resetBtn.addEventListener('click', () => {
-    participantsList.value = '';
+    participantsEl.value = '';
+    currentBracket = null;
     bracketContainer.classList.add('hidden');
+    bracketContainer.innerHTML = '';
     emptyState.classList.remove('hidden');
     errorContainer.classList.add('hidden');
-    bracketContainer.innerHTML = '';
-    currentBracket = null;
+    progressLabel.classList.add('hidden');
   });
 </script>
