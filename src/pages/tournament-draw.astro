@@ -152,19 +152,36 @@ const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Tea
     }
 
     // 3+ players: Two-sided converging layout
-    const leftSideRounds = currentBracket.rounds.slice(0, totalRounds - 1);
-    const rightSideRounds = currentBracket.rounds.slice(0, totalRounds - 1).map(r => [...r].reverse());
+    const allRoundsExceptFinal = currentBracket.rounds.slice(0, totalRounds - 1);
+    const round0 = currentBracket.rounds[0];
+    const half = Math.ceil(round0.length / 2);
+
+    // FIX: Define leftHalfRounds and rightHalfRounds based on the indices of the first round
+    // We map over the rounds, but we only split based on the index in the *first* round (round 0).
+    const leftSideRounds = allRoundsExceptFinal.map(r => r.slice(0, half));
+    const rightSideRounds = allRoundsExceptFinal.map(r => r.slice(half).reverse());
+
+    // Debugging
+    const allParticipants = round0.flatMap(m => m.players).filter(p => p !== null);
+    const leftHalf = leftSideRounds[0].flatMap(m => m.players).filter(p => p !== null);
+    const rightHalf = rightSideRounds[0].flatMap(m => m.players).filter(p => p !== null);
+
+    console.log('all participants:', allParticipants);
+    console.log('left half:', leftHalf);
+    console.log('right half:', rightHalf);
+    console.log('union has all teams, no duplicates:',
+      new Set([...leftHalf, ...rightHalf]).size === allParticipants.length);
+
     const finalRound = currentBracket.rounds[totalRounds - 1];
 
     const renderMatch = (match: any, rIndex: number, mIndex: number) => {
         const [p1, p2] = match.players;
-        const isWinner0 = match.winner === 0;
-        const isWinner1 = match.winner === 1;
+        console.log('Match players:', match.players, 'Round:', match.round, 'Index:', match.index);
 
         const renderPlayer = (name: string | null, side: 0 | 1, rIndex: number, mIndex: number) => {
             if (name === null) return `<div class="p-2 text-xs italic text-ink-soft truncate">Wait...</div>`;
             const isWinner = match.winner === side;
-            return `<button type="button" data-round="${rIndex}" data-match="${mIndex}" data-side="${side}" class="w-full p-2 text-sm truncate transition-all ${isWinner ? 'bg-brand/10 font-bold' : 'hover:bg-wash'}">${name}</button>`;
+            return `<button type="button" data-round="${match.round}" data-match="${match.index}" data-side="${side}" class="w-full p-2 text-sm truncate transition-all ${isWinner ? 'bg-brand/10 font-bold' : 'hover:bg-wash'}">${name}</button>`;
         };
 
         return `
@@ -187,7 +204,7 @@ const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Tea
     resultContainer.innerHTML = `
       <div class="flex gap-8 justify-center overflow-x-auto pb-4">
         <div class="flex gap-4">
-          ${leftSideRounds.map((round, i) => renderColumn(round.filter((_, idx) => idx < round.length / 2), i, false)).join('')}
+          ${leftSideRounds.map((round, i) => renderColumn(round, i, false)).join('')}
         </div>
         <div class="flex flex-col justify-center gap-4">
            <p class="text-[10px] font-bold uppercase tracking-widest text-brand-deep text-center">Final</p>
@@ -195,7 +212,7 @@ const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Tea
            ${champ ? `<div class="text-lg font-bold text-brand-deep text-center p-2 bg-wash rounded">🏆 ${champ}</div>` : ''}
         </div>
         <div class="flex gap-4">
-          ${rightSideRounds.map((round, i) => renderColumn(round.filter((_, idx) => idx >= round.length / 2), i, true)).join('')}
+          ${rightSideRounds.map((round, i) => renderColumn(round, i, true)).join('')}
         </div>
       </div>
     `;
@@ -233,6 +250,19 @@ const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Tea
 
       const shuffled = shuffleArray(validation.items);
       currentBracket = createBracket(shuffled);
+
+      // Debugging
+      const teamsInBracket = new Set();
+      currentBracket.rounds[0].forEach(match => {
+          match.players.forEach(p => { if (p) teamsInBracket.add(p); });
+      });
+      const debugMsg = `all participants: ${shuffled.length}, teams in bracket: ${teamsInBracket.size}, match: ${teamsInBracket.size === shuffled.length}`;
+      console.log(debugMsg);
+      // Also show in UI for verification
+      const debugDiv = document.createElement('div');
+      debugDiv.className = 'mt-4 p-2 bg-yellow-100 text-xs';
+      debugDiv.textContent = debugMsg;
+      resultContainer.parentElement?.appendChild(debugDiv);
 
       emptyState.classList.add('hidden');
       resultContainer.classList.remove('hidden');
