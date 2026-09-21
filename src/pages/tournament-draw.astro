@@ -153,13 +153,10 @@ const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Tea
 
     // 3+ players: Two-sided converging layout
     const allRoundsExceptFinal = currentBracket.rounds.slice(0, totalRounds - 1);
-    const round0 = currentBracket.rounds[0];
-    const half = Math.ceil(round0.length / 2);
 
-    // FIX: Define leftHalfRounds and rightHalfRounds based on the indices of the first round
-    // We map over the rounds, but we only split based on the index in the *first* round (round 0).
-    const leftSideRounds = allRoundsExceptFinal.map(r => r.slice(0, half));
-    const rightSideRounds = allRoundsExceptFinal.map(r => r.slice(half).reverse());
+    // Split matches of each round into Left and Right halves based on match index
+    const leftSideRounds = allRoundsExceptFinal.map(r => r.filter((_, i) => i < r.length / 2));
+    const rightSideRounds = allRoundsExceptFinal.map(r => r.filter((_, i) => i >= r.length / 2).reverse());
 
     // Debugging
     const allParticipants = round0.flatMap(m => m.players).filter(p => p !== null);
