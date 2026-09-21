@@ -72,13 +72,30 @@ const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Tea
 
     bracketContainer.innerHTML = '';
 
-    // Set container height based on the number of matches in the first round
+    // Add round labels
+    const labels = document.createElement('div');
+    labels.className = 'flex mb-4';
+    currentBracket.rounds.forEach((round, rIndex) => {
+        const label = document.createElement('div');
+        label.className = 'w-40 text-center font-bold text-ink-soft text-sm';
+        label.textContent = roundName(round.length);
+        label.style.marginLeft = rIndex === 0 ? '0' : '40px'; // 200px column - 160px width
+        labels.appendChild(label);
+    });
+    bracketContainer.appendChild(labels);
     const firstRoundMatches = currentBracket.rounds[0].length;
     bracketContainer.style.height = `${firstRoundMatches * 2 * UNIT}px`;
 
+    // Draw connector lines
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.className = "absolute top-0 left-0 pointer-events-none";
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    bracketContainer.appendChild(svg);
+
     currentBracket.rounds.forEach((round, rIndex) => {
       round.forEach((match, mIndex) => {
-        const top = (mIndex * (2 ** (rIndex + 1)) + (2 ** rIndex) - 0.5) * UNIT;
+        const top = (mIndex * (2 ** (rIndex + 1)) + (2 ** rIndex) - 0.5) * UNIT + 40; // +40 for labels
         const left = rIndex * 200; // Column width
 
         const card = document.createElement('div');
