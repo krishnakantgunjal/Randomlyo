@@ -26,70 +26,18 @@ const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Tea
           class="mt-5"
         />
         <p class="mt-3 text-xs text-ink-soft">Works best with an even number of participants.</p>
-        <button id="generateBtn" type="button" class="primary-action mt-7 w-full">Draw matchups <span aria-hidden="true">-&gt;</span></button>
+        <button id="generateBtn" type="button" class="primary-action mt-7 w-full">Draw matchups <span aria-hidden="true">-></span></button>
         <button id="resetBtn" type="button" class="mt-4 w-full text-sm font-bold text-ink-soft underline decoration-line underline-offset-4 hover:text-ink">Reset</button>
         <p id="errorContainer" class="mt-4 hidden border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert"><span id="errorMessage"></span></p>
       </section>
 
-      <section class="surface min-h-[25rem] bg-white p-5 sm:p-7" aria-live="polite">
+      <section class="surface min-h-[25rem] bg-white p-5 sm:p-7 overflow-x-auto" aria-live="polite">
         <p class="eyebrow">Tournament bracket</p>
         <div id="emptyState" class="py-20 text-center">
           <p class="text-5xl" aria-hidden="true">🏆</p>
           <p class="mt-4 text-sm text-ink-soft">Your bracket will appear here.</p>
         </div>
-        <div id="resultContainer" class="mt-5 flex gap-4 overflow-x-auto pb-4"></div>
-      </section>
-    </div>
-
-    <!-- Kept for search engines; the workspace itself is a two-panel layout. -->
-    <div class="mx-auto mt-12 max-w-2xl">
-      <section class="legacy-section mb-12 border border-line bg-wash p-4">
-        <h3 class="font-bold mb-2">Tournament Structure</h3>
-        <p class="text-sm text-ink-soft">
-          The current version generates a random first-round draw. After you complete Round 1, you can use this tool again with the winners to generate Round 2, and so on.
-        </p>
-      </section>
-
-      <!-- Common Uses -->
-      <section class="legacy-section mb-12">
-        <h2 class="text-2xl font-bold mb-6">Common Uses</h2>
-        <ul class="space-y-3 text-ink-soft">
-          <li class="flex items-start gap-3">
-            <span class="text-brand-deep font-bold">•</span>
-            <span>Sports tournament draws</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <span class="text-brand-deep font-bold">•</span>
-            <span>Esports bracket generation</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <span class="text-brand-deep font-bold">•</span>
-            <span>Game tournament matchups</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <span class="text-brand-deep font-bold">•</span>
-            <span>Competition round pairings</span>
-          </li>
-        </ul>
-      </section>
-
-      <!-- FAQ -->
-      <section class="legacy-section">
-        <h2 class="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
-        <div class="space-y-6">
-          <div>
-            <h3 class="font-bold mb-2">What if I have an odd number of participants?</h3>
-            <p class="text-ink-soft">One participant will get a bye (automatic advancement). For the fairest tournament, an even number is recommended.</p>
-          </div>
-          <div>
-            <h3 class="font-bold mb-2">Can I use this for multiple rounds?</h3>
-            <p class="text-ink-soft">Yes, use it again with the Round 1 winners to generate Round 2 matchups, and so on.</p>
-          </div>
-          <div>
-            <h3 class="font-bold mb-2">Is this a true random draw?</h3>
-            <p class="text-ink-soft">Yes, participants are randomly paired using cryptographic randomization for fair matchups.</p>
-          </div>
-        </div>
+        <div id="bracketContainer" class="relative mt-8 min-w-[800px]"></div>
       </section>
     </div>
   </ToolLayout>
@@ -98,12 +46,10 @@ const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Tea
 <script>
   import { validateList } from '../lib/utils';
   import { shuffleArray } from '../lib/random';
-  import { revealResult } from '../lib/effects';
   import {
     createBracket,
     setWinner,
     roundName,
-    champion,
     type Bracket,
     MIN_PARTICIPANTS,
     MAX_PARTICIPANTS
@@ -112,110 +58,53 @@ const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Tea
   const participantsList = document.getElementById('participantsList') as HTMLTextAreaElement;
   const generateBtn = document.getElementById('generateBtn') as HTMLButtonElement;
   const resetBtn = document.getElementById('resetBtn') as HTMLButtonElement;
-  const resultContainer = document.getElementById('resultContainer') as HTMLElement;
+  const bracketContainer = document.getElementById('bracketContainer') as HTMLElement;
   const emptyState = document.getElementById('emptyState') as HTMLElement;
   const errorContainer = document.getElementById('errorContainer') as HTMLElement;
   const errorMessage = document.getElementById('errorMessage') as HTMLElement;
 
   let currentBracket: Bracket | null = null;
+  const UNIT = 80; // Vertical unit in pixels for card positioning
 
   function renderBracket() {
     if (!currentBracket) return;
 
-    const champ = champion(currentBracket);
-    const totalRounds = currentBracket.rounds.length;
+    bracketContainer.innerHTML = '';
 
-    if (currentBracket.size === 2) {
-      // 2 players: Single match
-      const finalMatch = currentBracket.rounds[0][0];
-      const renderPlayer = (name: string | null, side: 0 | 1) => {
-        if (name === null) return `<div class="p-3 text-sm italic text-ink-soft">Waiting...</div>`;
-        const isWinner = finalMatch.winner === side;
-        return `
-          <button type="button" class="w-full p-4 text-center border-line border rounded transition-all ${isWinner ? 'bg-brand/10 border-brand-deep font-bold' : 'hover:bg-wash'}"
-            onclick="setWinner(${0}, ${0}, ${side})">
-            ${name}
-          </button>
-        `;
-      };
-      resultContainer.innerHTML = `
-        <div class="flex flex-col gap-4 items-center">
-          <div class="surface p-6 rounded shadow-sm flex flex-col gap-2">
-            ${renderPlayer(finalMatch.players[0], 0)}
-            <div class="text-xs font-bold text-ink-soft text-center uppercase">vs</div>
-            ${renderPlayer(finalMatch.players[1], 1)}
-          </div>
-          ${champ ? `<div class="text-xl font-bold text-brand-deep mt-2 p-4 bg-wash rounded">🏆 ${champ} is the Champion!</div>` : ''}
-        </div>
-      `;
-      return;
-    }
+    // Set container height based on the number of matches in the first round
+    const firstRoundMatches = currentBracket.rounds[0].length;
+    bracketContainer.style.height = `${firstRoundMatches * 2 * UNIT}px`;
 
-    // 3+ players: Two-sided converging layout
-    const allRoundsExceptFinal = currentBracket.rounds.slice(0, totalRounds - 1);
+    currentBracket.rounds.forEach((round, rIndex) => {
+      round.forEach((match, mIndex) => {
+        const top = (mIndex * (2 ** (rIndex + 1)) + (2 ** rIndex) - 0.5) * UNIT;
+        const left = rIndex * 200; // Column width
 
-    // Split matches of each round into Left and Right halves based on match index
-    const leftSideRounds = allRoundsExceptFinal.map(r => r.filter((_, i) => i < r.length / 2));
-    const rightSideRounds = allRoundsExceptFinal.map(r => r.filter((_, i) => i >= r.length / 2).reverse());
+        const card = document.createElement('div');
+        card.className = 'absolute w-40 surface border border-line rounded shadow-sm';
+        card.style.top = `${top}px`;
+        card.style.left = `${left}px`;
 
-    // Debugging
-    const allParticipants = round0.flatMap(m => m.players).filter(p => p !== null);
-    const leftHalf = leftSideRounds[0].flatMap(m => m.players).filter(p => p !== null);
-    const rightHalf = rightSideRounds[0].flatMap(m => m.players).filter(p => p !== null);
-
-    console.log('all participants:', allParticipants);
-    console.log('left half:', leftHalf);
-    console.log('right half:', rightHalf);
-    console.log('union has all teams, no duplicates:',
-      new Set([...leftHalf, ...rightHalf]).size === allParticipants.length);
-
-    const finalRound = currentBracket.rounds[totalRounds - 1];
-
-    const renderMatch = (match: any, rIndex: number, mIndex: number) => {
         const [p1, p2] = match.players;
-        console.log('Match players:', match.players, 'Round:', match.round, 'Index:', match.index);
 
-        const renderPlayer = (name: string | null, side: 0 | 1, rIndex: number, mIndex: number) => {
-            if (name === null) return `<div class="p-2 text-xs italic text-ink-soft truncate">Wait...</div>`;
-            const isWinner = match.winner === side;
-            return `<button type="button" data-round="${match.round}" data-match="${match.index}" data-side="${side}" class="w-full p-2 text-sm truncate transition-all ${isWinner ? 'bg-brand/10 font-bold' : 'hover:bg-wash'}">${name}</button>`;
-        };
-
-        return `
-            <div class="surface rounded shadow-sm mb-2 w-40">
-                <div class="divide-y divide-line">
-                    ${renderPlayer(p1, 0, rIndex, mIndex)}
-                    ${renderPlayer(p2, 1, rIndex, mIndex)}
-                </div>
+        card.innerHTML = `
+            <div class="divide-y divide-line">
+                <button type="button" data-round="${match.round}" data-match="${match.index}" data-side="0"
+                    class="w-full p-2 text-sm text-left truncate ${match.winner === 0 ? 'bg-brand/10 font-bold' : 'hover:bg-wash'} ${!p1 ? 'text-ink-soft italic' : ''}">
+                    ${p1 || (match.bye ? 'Bye' : 'Winner of ...')}
+                </button>
+                <button type="button" data-round="${match.round}" data-match="${match.index}" data-side="1"
+                    class="w-full p-2 text-sm text-left truncate ${match.winner === 1 ? 'bg-brand/10 font-bold' : 'hover:bg-wash'} ${!p2 ? 'text-ink-soft italic' : ''}">
+                    ${p2 || (match.bye ? 'Bye' : 'Winner of ...')}
+                </button>
             </div>
         `;
-    };
+        bracketContainer.appendChild(card);
+      });
+    });
 
-    const renderColumn = (matches: any[], rIndex: number, isRight: boolean) => `
-        <div class="flex flex-col gap-4 ${isRight ? 'items-end' : 'items-start'}">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-brand-deep">${roundName(matches.length)}</p>
-            ${matches.map((m, mIdx) => renderMatch(m, rIndex, mIdx)).join('')}
-        </div>
-    `;
-
-    resultContainer.innerHTML = `
-      <div class="flex gap-8 justify-center overflow-x-auto pb-4">
-        <div class="flex gap-4">
-          ${leftSideRounds.map((round, i) => renderColumn(round, i, false)).join('')}
-        </div>
-        <div class="flex flex-col justify-center gap-4">
-           <p class="text-[10px] font-bold uppercase tracking-widest text-brand-deep text-center">Final</p>
-           ${renderMatch(finalRound[0], totalRounds - 1, 0)}
-           ${champ ? `<div class="text-lg font-bold text-brand-deep text-center p-2 bg-wash rounded">🏆 ${champ}</div>` : ''}
-        </div>
-        <div class="flex gap-4">
-          ${rightSideRounds.map((round, i) => renderColumn(round, i, true)).join('')}
-        </div>
-      </div>
-    `;
-
-    // Attach click listeners
-    resultContainer.querySelectorAll('button[data-round]').forEach(btn => {
+    // Re-attach listeners
+    bracketContainer.querySelectorAll('button[data-round]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLButtonElement;
         const round = parseInt(target.dataset.round!);
@@ -232,40 +121,16 @@ const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Tea
   generateBtn.addEventListener('click', () => {
     try {
       const validation = validateList(participantsList.value);
-      if (!validation.valid) {
-        errorMessage.textContent = validation.error || 'Invalid input';
-        errorContainer.classList.remove('hidden');
-        return;
-      }
-
-      if (validation.items.length < MIN_PARTICIPANTS) {
-        throw new Error(`You need at least ${MIN_PARTICIPANTS} participants for a tournament`);
-      }
-      if (validation.items.length > MAX_PARTICIPANTS) {
-        throw new Error(`This tool supports up to ${MAX_PARTICIPANTS} participants`);
+      if (!validation.valid || validation.items.length < MIN_PARTICIPANTS || validation.items.length > MAX_PARTICIPANTS) {
+        throw new Error(validation.error || `Please enter between ${MIN_PARTICIPANTS} and ${MAX_PARTICIPANTS} participants.`);
       }
 
       const shuffled = shuffleArray(validation.items);
       currentBracket = createBracket(shuffled);
 
-      // Debugging
-      const teamsInBracket = new Set();
-      currentBracket.rounds[0].forEach(match => {
-          match.players.forEach(p => { if (p) teamsInBracket.add(p); });
-      });
-      const debugMsg = `all participants: ${shuffled.length}, teams in bracket: ${teamsInBracket.size}, match: ${teamsInBracket.size === shuffled.length}`;
-      console.log(debugMsg);
-      // Also show in UI for verification
-      const debugDiv = document.createElement('div');
-      debugDiv.className = 'mt-4 p-2 bg-yellow-100 text-xs';
-      debugDiv.textContent = debugMsg;
-      resultContainer.parentElement?.appendChild(debugDiv);
-
       emptyState.classList.add('hidden');
-      resultContainer.classList.remove('hidden');
-      renderBracket();
-      revealResult(resultContainer);
       errorContainer.classList.add('hidden');
+      renderBracket();
     } catch (err) {
       errorMessage.textContent = err instanceof Error ? err.message : 'An error occurred';
       errorContainer.classList.remove('hidden');
@@ -274,10 +139,10 @@ const defaultParticipants = 'Team A, Team B, Team C, Team D, Team E, Team F, Tea
 
   resetBtn.addEventListener('click', () => {
     participantsList.value = '';
-    resultContainer.classList.add('hidden');
+    bracketContainer.classList.add('hidden');
     emptyState.classList.remove('hidden');
     errorContainer.classList.add('hidden');
-    resultContainer.innerHTML = '';
+    bracketContainer.innerHTML = '';
     currentBracket = null;
   });
 </script>
