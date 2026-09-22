@@ -55,7 +55,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
             <h2 id="bracket-heading" class="bracket-panel-title">Tournament bracket</h2>
           </div>
           <div class="flex items-center gap-3">
-            <button id="printBtn" type="button" class="text-sm font-bold text-brand-deep underline decoration-brand-deep underline-offset-4 hover:text-ink">Print bracket</button>
+            <button id="downloadBtn" type="button" class="text-sm font-bold text-brand-deep underline decoration-brand-deep underline-offset-4 hover:text-ink">Download bracket</button>
             <span id="progressLabel" class="progress-label hidden" aria-live="polite"></span>
           </div>
         </div>
@@ -84,6 +84,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
 
 <script>
   import { validateList } from '../lib/utils';
+  import html2canvas from 'html2canvas';
   import {
     champion,
     createBracket,
@@ -114,7 +115,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
   const participantsEl = document.getElementById('participantsList') as HTMLTextAreaElement;
   const generateBtn = document.getElementById('generateBtn') as HTMLButtonElement;
   const resetBtn = document.getElementById('resetBtn') as HTMLButtonElement;
-  const bracketStage = document.getElementById('bracketStage') as HTMLElement;
+  const downloadBtn = document.getElementById('downloadBtn') as HTMLButtonElement;
   const bracketScroll = document.getElementById('bracketScroll') as HTMLElement;
   const emptyState = document.getElementById('emptyState') as HTMLElement;
   const errorContainer = document.getElementById('errorContainer') as HTMLElement;
@@ -394,6 +395,26 @@ const description = 'Create a fair single-elimination bracket with random seedin
     if (setWinner(currentBracket, matchId, side)) {
       renderBracket();
     }
+  });
+
+  // Manage scrollbar visibility based on actual content overflow
+  const observer = new ResizeObserver(() => {
+    console.log(`ScrollWidth: ${bracketStage.scrollWidth}, ClientWidth: ${bracketScroll.clientWidth}`);
+    if (bracketStage.scrollWidth > bracketScroll.clientWidth) {
+      bracketScroll.style.overflowX = 'auto';
+    } else {
+      bracketScroll.style.overflowX = 'hidden';
+    }
+  });
+  observer.observe(bracketStage);
+
+  downloadBtn.addEventListener('click', async () => {
+    if (!bracketScroll) return;
+    const canvas = await html2canvas(bracketScroll);
+    const link = document.createElement('a');
+    link.download = 'tournament-bracket.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
   });
 </script>
 
