@@ -55,7 +55,13 @@ const description = 'Create a fair single-elimination bracket with random seedin
             <h2 id="bracket-heading" class="bracket-panel-title">Tournament bracket</h2>
           </div>
           <div class="flex items-center gap-3">
-            <button id="downloadBtn" type="button" class="text-sm font-bold text-brand-deep underline decoration-brand-deep underline-offset-4 hover:text-ink">Download bracket</button>
+            <div class="relative">
+              <button id="downloadBtn" type="button" class="text-sm font-bold text-brand-deep underline decoration-brand-deep underline-offset-4 hover:text-ink">Download bracket ▾</button>
+              <div id="downloadMenu" class="absolute right-0 mt-2 hidden w-40 rounded-xl border border-line bg-white shadow-lg z-50">
+                <button id="downloadPng" type="button" class="block w-full px-4 py-2 text-left text-sm font-bold text-ink hover:bg-wash">PNG image</button>
+                <button id="downloadPdf" type="button" class="block w-full px-4 py-2 text-left text-sm font-bold text-ink hover:bg-wash">PDF</button>
+              </div>
+            </div>
             <span id="progressLabel" class="progress-label hidden" aria-live="polite"></span>
           </div>
         </div>
@@ -77,6 +83,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
         <div id="bracketScroll" class="bracket-scroll hidden" aria-label="Tournament bracket">
           <div id="bracketStage" class="bracket-stage"></div>
         </div>
+        <div id="bracketExportStage" class="bracket-export-stage hidden"></div>
       </section>
     </div>
   </ToolLayout>
@@ -231,56 +238,57 @@ const description = 'Create a fair single-elimination bracket with random seedin
     return `M ${start.x} ${start.y} L ${middle} ${start.y} L ${middle} ${end.y} L ${end.x} ${end.y}`;
   }
 
-  function renderSingleMatch(bracket: Bracket) {
-    bracketStage.className = 'bracket-stage single-match-stage';
-    bracketStage.style.width = '100%';
-    bracketStage.style.height = '190px';
-    bracketStage.style.display = 'grid';
-    bracketStage.style.placeItems = 'center';
+  function renderBracketTo(bracket: Bracket, container: HTMLElement, isExport = false) {
+    container.replaceChildren();
+    container.className = isExport ? 'bracket-export-stage' : 'bracket-stage';
+    container.style.display = '';
+    container.style.placeItems = '';
+    container.style.width = '';
+    container.style.height = '';
 
-    const match = bracket.final;
-    const card = createMatchCard(match, 0, 0, bracket.totalRounds);
-    card.classList.add('single-match-card');
-    card.style.position = 'relative';
-    card.style.left = 'auto';
-    card.style.top = 'auto';
-    bracketStage.appendChild(card);
-  }
+    if (bracket.size === 2) {
+      container.className = isExport ? 'bracket-export-stage single-match-stage' : 'bracket-stage single-match-stage';
+      if (isExport) {
+          container.style.width = '500px';
+          container.style.height = '200px';
+      } else {
+          container.style.width = '100%';
+          container.style.height = '190px';
+          container.style.display = 'grid';
+          container.style.placeItems = 'center';
+      }
 
-  function renderBracket() {
-    if (!currentBracket) return;
-
-    bracketScroll.classList.remove('hidden');
-    emptyState.classList.add('hidden');
-    bracketStage.replaceChildren();
-    bracketStage.className = 'bracket-stage';
-    bracketStage.style.display = '';
-    bracketStage.style.placeItems = '';
-    bracketStage.style.width = '';
-    bracketStage.style.height = '';
-
-    if (currentBracket.size === 2) {
-      renderSingleMatch(currentBracket);
-      updateStatus();
+      const match = bracket.final;
+      const card = createMatchCard(match, 0, 0, bracket.totalRounds);
+      card.classList.add('single-match-card');
+      card.style.position = isExport ? 'absolute' : 'relative';
+      if (isExport) {
+          card.style.left = '180px';
+          card.style.top = '70px';
+      } else {
+          card.style.left = 'auto';
+          card.style.top = 'auto';
+      }
+      container.appendChild(card);
       return;
     }
 
-    const columns = getColumns(currentBracket);
-    const height = sideHeight(currentBracket) + STAGE_OFFSET * 2;
+    const columns = getColumns(bracket);
+    const height = sideHeight(bracket) + STAGE_OFFSET * 2;
     const width =
       STAGE_PAD * 2 +
       columns.reduce((sum, column) => sum + column.width, 0) +
       COLUMN_GAP * (columns.length - 1);
 
-    bracketStage.style.width = `${width}px`;
-    bracketStage.style.height = `${height}px`;
+    container.style.width = `${width}px`;
+    container.style.height = `${height}px`;
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'connector-layer');
     svg.setAttribute('aria-hidden', 'true');
     svg.setAttribute('width', String(width));
     svg.setAttribute('height', String(height));
-    bracketStage.appendChild(svg);
+    container.appendChild(svg);
 
     const positions = new Map<string, { x: number; y: number; match: BracketMatch }>();
     let x = STAGE_PAD;
@@ -295,16 +303,16 @@ const description = 'Create a fair single-elimination bracket with random seedin
       label.className = 'round-label';
       const match = column.matches[0];
       label.textContent = column.kind === 'final'
-        ? roundName(currentBracket!.totalRounds - 1, currentBracket!.totalRounds)
-        : roundName(match.round, currentBracket!.totalRounds);
+        ? roundName(bracket.totalRounds - 1, bracket.totalRounds)
+        : roundName(match.round, bracket.totalRounds);
       columnEl.appendChild(label);
 
       column.matches.forEach((roundMatch) => {
         const top = column.kind === 'final'
-          ? (sideHeight(currentBracket!) - CARD_H) / 2
+          ? (sideHeight(bracket) - CARD_H) / 2
           : matchTop(roundMatch);
         const left = (column.width - CARD_W) / 2;
-        const card = createMatchCard(roundMatch, left, top, currentBracket!.totalRounds);
+        const card = createMatchCard(roundMatch, left, top, bracket.totalRounds);
         columnEl.appendChild(card);
 
         positions.set(roundMatch.id, {
@@ -314,11 +322,11 @@ const description = 'Create a fair single-elimination bracket with random seedin
         });
       });
 
-      bracketStage.appendChild(columnEl);
+      container.appendChild(columnEl);
       x += column.width + COLUMN_GAP;
     });
 
-    for (const match of currentBracket.leftRounds.flat().concat(currentBracket.rightRounds.flat())) {
+    for (const match of bracket.leftRounds.flat().concat(bracket.rightRounds.flat())) {
       if (!match.feedsTo) continue;
       const start = positions.get(match.id);
       const end = positions.get(match.feedsTo.matchId);
@@ -332,9 +340,24 @@ const description = 'Create a fair single-elimination bracket with random seedin
       path.setAttribute('d', connectorPath({ x: startX, y: startY }, { x: endX, y: endY }));
       svg.appendChild(path);
     }
+  }
+
+  function renderBracket() {
+    if (!currentBracket) return;
+
+    bracketScroll.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+
+    // UI render
+    renderBracketTo(currentBracket, bracketStage, false);
+    // Apply UI scale
+    bracketStage.style.transform = 'scale(0.92)';
+    bracketStage.style.transformOrigin = 'center top';
 
     updateStatus();
   }
+
+  // ... (rest of the script)
 
   function updateStatus() {
     if (!currentBracket) return;
@@ -408,42 +431,44 @@ const description = 'Create a fair single-elimination bracket with random seedin
   });
   observer.observe(bracketStage);
 
-  downloadBtn.addEventListener('click', async () => {
-    const stage = document.getElementById('bracketStage') as HTMLElement;
-    const canvas = await html2canvas(stage, {
-      width: stage.scrollWidth,
-      height: stage.scrollHeight,
-      windowWidth: stage.scrollWidth,
-      windowHeight: stage.scrollHeight,
-      backgroundColor: '#ffffff',
-      scale: Math.min(2, window.devicePixelRatio || 1),
-    });
-    const link = document.createElement('a');
-    link.download = 'tournament-bracket.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+  // Dropdown
+  const downloadMenu = document.getElementById('downloadMenu') as HTMLElement;
+  downloadBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    downloadMenu.classList.toggle('hidden');
   });
+  document.addEventListener('click', () => downloadMenu.classList.add('hidden'));
 
-  const pdfBtn = document.createElement('button');
-  pdfBtn.type = 'button';
-  pdfBtn.textContent = 'Download PDF';
-  pdfBtn.className = 'text-sm font-bold text-brand-deep underline decoration-brand-deep underline-offset-4 hover:text-ink ml-2';
-  pdfBtn.addEventListener('click', async () => {
-    const stage = document.getElementById('bracketStage') as HTMLElement;
-    const canvas = await html2canvas(stage, {
-      width: stage.scrollWidth,
-      height: stage.scrollHeight,
-      windowWidth: stage.scrollWidth,
-      windowHeight: stage.scrollHeight,
-      backgroundColor: '#ffffff',
-      scale: 2,
-    });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [stage.scrollWidth * 0.75, stage.scrollHeight * 0.75] });
-    pdf.addImage(imgData, 'PNG', 10, 10, stage.scrollWidth * 0.75 - 20, stage.scrollHeight * 0.75 - 20);
-    pdf.save('tournament-bracket.pdf');
-  });
-  downloadBtn.parentElement?.appendChild(pdfBtn);
+  // Export
+  const bracketExportStage = document.getElementById('bracketExportStage') as HTMLElement;
+
+  async function exportTournament(type: 'png' | 'pdf') {
+      if (!currentBracket) return;
+      renderBracketTo(currentBracket, bracketExportStage, true);
+      bracketExportStage.classList.remove('hidden');
+
+      const canvas = await html2canvas(bracketExportStage, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+      });
+
+      bracketExportStage.classList.add('hidden');
+
+      if (type === 'png') {
+          const link = document.createElement('a');
+          link.download = 'tournament-bracket.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+      } else {
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [canvas.width, canvas.height] });
+          pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+          pdf.save('tournament-bracket.pdf');
+      }
+  }
+
+  document.getElementById('downloadPng')?.addEventListener('click', () => exportTournament('png'));
+  document.getElementById('downloadPdf')?.addEventListener('click', () => exportTournament('pdf'));
 </script>
 
 <style is:global>
