@@ -62,13 +62,14 @@ function makeMatch(
   index: number,
   slots: [string | null, string | null],
   feedsFrom: [string | null, string | null],
+  matchNumber: number,
 ): BracketMatch {
   const [slotA, slotB] = slots;
   const bye = round === 0 && (slotA === null) !== (slotB === null);
 
   return {
     id,
-    number: 0,
+    number: matchNumber,
     side,
     round,
     index,
@@ -86,8 +87,10 @@ function buildSide(
   seedToName: Map<number, string>,
   side: Exclude<MatchSide, 'final'>,
   feedsTo: FeedTarget,
-): BracketMatch[][] {
+  startMatchNumber: number,
+): { rounds: BracketMatch[][], nextMatchNumber: number } {
   const firstRound: BracketMatch[] = [];
+  let matchNumber = startMatchNumber;
   for (let index = 0; index < seeds.length / 2; index += 1) {
     const seedA = seeds[index * 2];
     const seedB = seeds[index * 2 + 1];
@@ -99,6 +102,7 @@ function buildSide(
         index,
         [seedToName.get(seedA) ?? null, seedToName.get(seedB) ?? null],
         [null, null],
+        matchNumber++,
       ),
     );
   }
@@ -118,6 +122,7 @@ function buildSide(
           index,
           [null, null],
           [feedA.id, feedB.id],
+          matchNumber++,
         ),
       );
     }
@@ -134,7 +139,7 @@ function buildSide(
   }
 
   rounds[rounds.length - 1][0].feedsTo = feedsTo;
-  return rounds;
+  return { rounds, nextMatchNumber: matchNumber };
 }
 
 export function roundName(round: number, totalRounds: number): string {
@@ -255,6 +260,7 @@ export function createBracket(participants: string[]): Bracket {
     0,
     [null, null],
     [null, null],
+    size - 1, // Final match number
   );
 
   if (size === 2) {
@@ -265,18 +271,25 @@ export function createBracket(participants: string[]): Bracket {
 
   const order = seedOrder(size);
   const halfSize = size / 2;
-  const leftRounds = buildSide(
+  let matchNumber = 1;
+  const leftResult = buildSide(
     order.slice(0, halfSize),
     seedToName,
     'left',
     { matchId: final.id, side: 0 },
+    matchNumber,
   );
-  const rightRounds = buildSide(
+  const leftRounds = leftResult.rounds;
+  matchNumber = leftResult.nextMatchNumber;
+
+  const rightResult = buildSide(
     order.slice(halfSize),
     seedToName,
     'right',
     { matchId: final.id, side: 1 },
+    matchNumber,
   );
+  const rightRounds = rightResult.rounds;
 
   final.feedsFrom = [
     leftRounds[leftRounds.length - 1][0].id,

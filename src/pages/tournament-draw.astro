@@ -54,7 +54,10 @@ const description = 'Create a fair single-elimination bracket with random seedin
             <p class="eyebrow">Single elimination</p>
             <h2 id="bracket-heading" class="bracket-panel-title">Tournament bracket</h2>
           </div>
-          <span id="progressLabel" class="progress-label hidden" aria-live="polite"></span>
+          <div class="flex items-center gap-3">
+            <button id="printBtn" type="button" class="text-sm font-bold text-brand-deep underline decoration-brand-deep underline-offset-4 hover:text-ink">Print bracket</button>
+            <span id="progressLabel" class="progress-label hidden" aria-live="polite"></span>
+          </div>
         </div>
 
         <div id="championPanel" class="champion-panel hidden" aria-live="polite">
