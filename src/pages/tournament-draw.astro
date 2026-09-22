@@ -84,6 +84,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
 
 <script>
   import { validateList } from '../lib/utils';
+  import { jsPDF } from 'jspdf';
   import html2canvas from 'html2canvas';
   import {
     champion,
@@ -97,11 +98,11 @@ const description = 'Create a fair single-elimination bracket with random seedin
     type BracketMatch,
   } from '../lib/bracket';
 
-  const CARD_W = 160;
-  const CARD_H = 64;
-  const COLUMN_W = 180;
-  const FINAL_W = 200;
-  const COLUMN_GAP = 16;
+  const CARD_W = 140;
+  const CARD_H = 56;
+  const COLUMN_W = 160;
+  const FINAL_W = 170;
+  const COLUMN_GAP = 14;
   const STAGE_PAD = 24;
   const STAGE_OFFSET = 56;
   const PITCH = CARD_H + 24;
@@ -408,11 +409,12 @@ const description = 'Create a fair single-elimination bracket with random seedin
   observer.observe(bracketStage);
 
   downloadBtn.addEventListener('click', async () => {
-    const canvas = await html2canvas(bracketStage, {
-      width: bracketStage.scrollWidth,
-      height: bracketStage.scrollHeight,
-      windowWidth: bracketStage.scrollWidth,
-      windowHeight: bracketStage.scrollHeight,
+    const stage = document.getElementById('bracketStage') as HTMLElement;
+    const canvas = await html2canvas(stage, {
+      width: stage.scrollWidth,
+      height: stage.scrollHeight,
+      windowWidth: stage.scrollWidth,
+      windowHeight: stage.scrollHeight,
       backgroundColor: '#ffffff',
       scale: Math.min(2, window.devicePixelRatio || 1),
     });
@@ -421,6 +423,27 @@ const description = 'Create a fair single-elimination bracket with random seedin
     link.href = canvas.toDataURL('image/png');
     link.click();
   });
+
+  const pdfBtn = document.createElement('button');
+  pdfBtn.type = 'button';
+  pdfBtn.textContent = 'Download PDF';
+  pdfBtn.className = 'text-sm font-bold text-brand-deep underline decoration-brand-deep underline-offset-4 hover:text-ink ml-2';
+  pdfBtn.addEventListener('click', async () => {
+    const stage = document.getElementById('bracketStage') as HTMLElement;
+    const canvas = await html2canvas(stage, {
+      width: stage.scrollWidth,
+      height: stage.scrollHeight,
+      windowWidth: stage.scrollWidth,
+      windowHeight: stage.scrollHeight,
+      backgroundColor: '#ffffff',
+      scale: 2,
+    });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [stage.scrollWidth * 0.75, stage.scrollHeight * 0.75] });
+    pdf.addImage(imgData, 'PNG', 10, 10, stage.scrollWidth * 0.75 - 20, stage.scrollHeight * 0.75 - 20);
+    pdf.save('tournament-bracket.pdf');
+  });
+  downloadBtn.parentElement?.appendChild(pdfBtn);
 </script>
 
 <style is:global>
@@ -582,7 +605,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
   }
 
   .bracket-scroll {
-    overflow-x: auto;
+    overflow-x: hidden;
     padding: 0.5rem 0 1rem;
     scrollbar-color: var(--color-brand-deep) var(--color-wash);
   }
@@ -594,6 +617,8 @@ const description = 'Create a fair single-elimination bracket with random seedin
     align-items: flex-start;
     justify-content: center;
     margin: 0 auto;
+    transform: scale(0.92);
+    transform-origin: center top;
   }
 
   .single-match-stage {
