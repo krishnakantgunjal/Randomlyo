@@ -123,12 +123,24 @@ export interface TodayState {
   gameState: 'playing' | 'won' | 'lost';
 }
 
+export interface LevelGameState {
+  level: number;
+  guesses: GuessResult[][];
+  currentInput: string;
+  gameState: 'playing' | 'won' | 'lost';
+}
+
+export type GameMode = 'daily' | 'levels';
+
 /* ------------------------------------------------------------------ */
 /* localStorage helpers                                                */
 /* ------------------------------------------------------------------ */
 
 const STATS_KEY = 'randomlyo:wg:stats';
 const TODAY_KEY = 'randomlyo:wg:today';
+export const LEVEL_KEY = 'randomlyo:wg:level';
+export const LEVEL_STATE_KEY = 'randomlyo:wg:level_state';
+export const MODE_KEY = 'randomlyo:wg:mode';
 export const SOUND_KEY = 'randomlyo:wg:sound';
 export const VIBRATE_KEY = 'randomlyo:wg:vibrate';
 export const DARK_KEY = 'randomlyo:wg:dark';
@@ -186,6 +198,68 @@ export function loadTodayState(): TodayState | null {
 export function saveTodayState(state: TodayState): void {
   try {
     localStorage.setItem(TODAY_KEY, JSON.stringify(state));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function loadCurrentLevel(): number {
+  try {
+    const raw = localStorage.getItem(LEVEL_KEY);
+    if (!raw) return 1;
+    const n = parseInt(raw, 10);
+    return isNaN(n) || n < 1 ? 1 : n;
+  } catch {
+    return 1;
+  }
+}
+
+export function saveCurrentLevel(level: number): void {
+  try {
+    localStorage.setItem(LEVEL_KEY, String(Math.max(1, Math.floor(level))));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function loadLevelState(): LevelGameState | null {
+  try {
+    const raw = localStorage.getItem(LEVEL_STATE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as LevelGameState;
+  } catch {
+    return null;
+  }
+}
+
+export function saveLevelState(state: LevelGameState): void {
+  try {
+    localStorage.setItem(LEVEL_STATE_KEY, JSON.stringify(state));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function clearLevelState(): void {
+  try {
+    localStorage.removeItem(LEVEL_STATE_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function loadGameMode(): GameMode {
+  try {
+    const raw = localStorage.getItem(MODE_KEY);
+    return raw === 'levels' ? 'levels' : 'daily';
+  } catch {
+    return 'daily';
+  }
+}
+
+export function saveGameMode(mode: GameMode): void {
+  try {
+    localStorage.setItem(MODE_KEY, mode);
   } catch {
     /* storage unavailable */
   }

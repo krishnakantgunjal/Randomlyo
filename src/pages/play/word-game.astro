@@ -53,6 +53,33 @@ const KB_ROW3 = ['ENTER','Z','X','C','V','B','N','M','⌫'];
       <div id="wg-toast" class="wg-toast" role="status" aria-live="polite" aria-atomic="true"></div>
     </header>
 
+    <!-- Mode & Level Bar -->
+    <div class="wg-mode-bar-wrap">
+      <div class="wg-mode-bar" role="tablist" aria-label="Game mode selection">
+        <button
+          type="button"
+          class="wg-mode-pill"
+          id="wg-mode-levels-btn"
+          role="tab"
+          aria-selected="true"
+        >
+          <span class="wg-mode-icon" aria-hidden="true">⭐</span>
+          <span>Level <strong id="wg-level-display">1</strong></span>
+        </button>
+        <button
+          type="button"
+          class="wg-mode-pill"
+          id="wg-mode-daily-btn"
+          role="tab"
+          aria-selected="false"
+        >
+          <span class="wg-mode-icon" aria-hidden="true">📅</span>
+          <span>Daily</span>
+          <span id="wg-daily-check" class="wg-mode-check wg-hidden" title="Completed today" aria-label="Completed today">✓</span>
+        </button>
+      </div>
+    </div>
+
     <!-- ══════════════════════════════════════════════════════════
          Game board — 6 rows × 5 tiles
     ══════════════════════════════════════════════════════════ -->
@@ -70,6 +97,24 @@ const KB_ROW3 = ['ENTER','Z','X','C','V','B','N','M','⌫'];
             ))}
           </div>
         ))}
+      </div>
+
+      <!-- Action Bar (visible on win or loss, or between games) -->
+      <div id="wg-action-bar" class="wg-action-bar wg-hidden">
+        <div class="wg-action-content">
+          <div class="wg-action-text-group">
+            <span id="wg-action-title" class="wg-action-title">Level Cleared! 🎉</span>
+            <span id="wg-action-sub" class="wg-action-sub">Ready for the next challenge?</span>
+          </div>
+          <div class="wg-action-btns">
+            <button type="button" id="wg-action-next-btn" class="wg-btn-next">
+              <span>Next Level ➔</span>
+            </button>
+            <button type="button" id="wg-action-retry-btn" class="wg-btn-retry wg-hidden">
+              <span>Try Again ↺</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- ══════════════════════════════════════════════════════════
@@ -122,6 +167,16 @@ const KB_ROW3 = ['ENTER','Z','X','C','V','B','N','M','⌫'];
 
         <!-- Result message (only shown after game ends) -->
         <div id="wg-result-msg" class="wg-result-msg wg-result-msg--hidden"></div>
+
+        <!-- Prominent Next Level / Replay button inside Modal -->
+        <div id="wg-modal-actions" class="wg-modal-actions wg-hidden">
+          <button type="button" id="wg-modal-next-btn" class="wg-btn-next wg-btn-next--lg">
+            <span>Next Level ➔</span>
+          </button>
+          <button type="button" id="wg-modal-retry-btn" class="wg-btn-retry wg-hidden">
+            <span>Try Again ↺</span>
+          </button>
+        </div>
 
         <h2 id="wg-stats-title" class="wg-stats-title">Statistics</h2>
 
@@ -505,6 +560,198 @@ const KB_ROW3 = ['ENTER','Z','X','C','V','B','N','M','⌫'];
   .wg-root.dark .wg-result-msg.won { color: #6ee7b7; }
   .wg-root.dark .wg-result-msg.lost { color: #9ca3af; }
 
+  /* ── Mode selector bar ── */
+  .wg-mode-bar-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 12px 16px 0;
+  }
+  .wg-mode-bar {
+    display: inline-flex;
+    align-items: center;
+    background: var(--wg-surface);
+    border: 1px solid var(--wg-border);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+  .wg-mode-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: var(--wg-text-soft);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+    font-family: inherit;
+  }
+  .wg-mode-pill:hover {
+    color: var(--wg-text);
+    background: rgba(0, 0, 0, 0.05);
+  }
+  .wg-root.dark .wg-mode-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .wg-mode-pill.active {
+    background: var(--wg-brand-deep);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(126, 147, 235, 0.35);
+  }
+  .wg-root.dark .wg-mode-pill.active {
+    background: var(--wg-brand);
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.45);
+  }
+  .wg-mode-icon {
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+  .wg-mode-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #4caf82;
+    color: #ffffff;
+    border-radius: 999px;
+    width: 15px;
+    height: 15px;
+    font-size: 0.65rem;
+    font-weight: 900;
+  }
+
+  /* ── Action bar (between board and keyboard) ── */
+  .wg-action-bar {
+    max-width: 420px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 10px 16px;
+    background: var(--wg-surface);
+    border: 1px solid var(--wg-border);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    animation: wgFadeSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .wg-action-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 12px;
+  }
+  .wg-action-text-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+  }
+  .wg-action-title {
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--wg-text);
+    line-height: 1.2;
+  }
+  .wg-action-sub {
+    font-size: 0.75rem;
+    color: var(--wg-text-soft);
+    margin-top: 2px;
+  }
+  .wg-action-btns {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* ── Buttons (Next Level & Retry) ── */
+  .wg-btn-next {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    font-size: 0.88rem;
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    user-select: none;
+  }
+  .wg-btn-next:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+    filter: brightness(1.06);
+  }
+  .wg-btn-next:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  }
+  .wg-btn-next--lg {
+    width: 100%;
+    padding: 13px 20px;
+    font-size: 1rem;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+
+  .wg-btn-retry {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--wg-border);
+    border-radius: 10px;
+    background: var(--wg-surface);
+    color: var(--wg-text);
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .wg-btn-retry:hover {
+    background: var(--wg-border);
+    transform: translateY(-1px);
+  }
+
+  .wg-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .wg-hidden {
+    display: none !important;
+  }
+
+  @keyframes wgFadeSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .wg-stats-title {
     text-align: center;
     font-size: 0.75rem;
@@ -683,12 +930,16 @@ import {
   scoreGuess,
   loadStats, saveStats,
   loadTodayState, saveTodayState,
+  loadCurrentLevel, saveCurrentLevel,
+  loadLevelState, saveLevelState, clearLevelState,
+  loadGameMode, saveGameMode,
   computeNewStreak,
   adjustStreakForMissedDays,
   winRate, avgGuesses,
   SOUND_KEY, VIBRATE_KEY, DARK_KEY,
+  type GameMode,
 } from '../../lib/wordgame.ts';
-import { getDailyWord, getDailyDateKey, VALID_WORDS } from '../../lib/words.ts';
+import { getDailyWord, getDailyDateKey, getLevelWord, VALID_WORDS } from '../../lib/words.ts';
 import { createSoundKit, burstConfetti } from '../../lib/effects.ts';
 
 /* ── Constants ── */
@@ -699,25 +950,43 @@ const FLIP_DURATION       = 150;  // ms per tile half-flip
 const REVEAL_DONE_DELAY   = (WORD_LENGTH - 1) * FLIP_DELAY_PER_TILE + FLIP_DURATION * 2 + 80;
 
 /* ── DOM refs ── */
-const root          = document.getElementById('wg-root')!;
-const board         = document.getElementById('wg-board')!;
-const keyboard      = document.getElementById('wg-keyboard')!;
-const toast         = document.getElementById('wg-toast')!;
-const statsPanel    = document.getElementById('wg-stats-panel')!;
-const statsBackdrop = document.getElementById('wg-stats-backdrop')!;
-const statsClose    = document.getElementById('wg-stats-close')!;
-const statsBtn      = document.getElementById('wg-stats-btn')!;
-const resultMsg     = document.getElementById('wg-result-msg')!;
-const soundBtn      = document.getElementById('wg-sound-btn')!;
-const soundIcon     = document.getElementById('wg-sound-icon')!;
-const vibrateBtn    = document.getElementById('wg-vibrate-btn')!;
-const vibrateIcon   = document.getElementById('wg-vibrate-icon')!;
-const darkBtn       = document.getElementById('wg-dark-btn')!;
-const darkIcon      = document.getElementById('wg-dark-icon')!;
+const root           = document.getElementById('wg-root')!;
+const board          = document.getElementById('wg-board')!;
+const keyboard       = document.getElementById('wg-keyboard')!;
+const toast          = document.getElementById('wg-toast')!;
+const statsPanel     = document.getElementById('wg-stats-panel')!;
+const statsBackdrop  = document.getElementById('wg-stats-backdrop')!;
+const statsClose     = document.getElementById('wg-stats-close')!;
+const statsBtn       = document.getElementById('wg-stats-btn')!;
+const resultMsg      = document.getElementById('wg-result-msg')!;
+const soundBtn       = document.getElementById('wg-sound-btn')!;
+const soundIcon      = document.getElementById('wg-sound-icon')!;
+const vibrateBtn     = document.getElementById('wg-vibrate-btn')!;
+const vibrateIcon    = document.getElementById('wg-vibrate-icon')!;
+const darkBtn        = document.getElementById('wg-dark-btn')!;
+const darkIcon       = document.getElementById('wg-dark-icon')!;
+
+// Mode & Action Bar elements
+const modeLevelsBtn  = document.getElementById('wg-mode-levels-btn')!;
+const modeDailyBtn   = document.getElementById('wg-mode-daily-btn')!;
+const levelDisplay   = document.getElementById('wg-level-display')!;
+const dailyCheck     = document.getElementById('wg-daily-check')!;
+
+const actionBar      = document.getElementById('wg-action-bar')!;
+const actionTitle    = document.getElementById('wg-action-title')!;
+const actionSub      = document.getElementById('wg-action-sub')!;
+const actionNextBtn  = document.getElementById('wg-action-next-btn')!;
+const actionRetryBtn = document.getElementById('wg-action-retry-btn')!;
+
+const modalActions   = document.getElementById('wg-modal-actions')!;
+const modalNextBtn   = document.getElementById('wg-modal-next-btn')!;
+const modalRetryBtn  = document.getElementById('wg-modal-retry-btn')!;
 
 /* ── Game state ── */
+let currentMode: GameMode = loadGameMode();
+let currentLevel = loadCurrentLevel();
 const dateKey = getDailyDateKey();
-const answer  = getDailyWord();   // uppercase 5-letter string
+let answer = currentMode === 'daily' ? getDailyWord() : getLevelWord(currentLevel);
 
 let guesses: Array<Array<{ letter: string; state: string }>> = [];
 let currentInput = '';
@@ -806,6 +1075,19 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeStats();
 });
 
+/* ── Mode UI updates ── */
+function updateModeUI() {
+  levelDisplay.textContent = String(currentLevel);
+  modeLevelsBtn.classList.toggle('active', currentMode === 'levels');
+  modeLevelsBtn.setAttribute('aria-selected', String(currentMode === 'levels'));
+  modeDailyBtn.classList.toggle('active', currentMode === 'daily');
+  modeDailyBtn.setAttribute('aria-selected', String(currentMode === 'daily'));
+
+  const savedDaily = loadTodayState();
+  const dailyDone = Boolean(savedDaily && savedDaily.dateKey === dateKey && savedDaily.gameState !== 'playing');
+  dailyCheck.classList.toggle('wg-hidden', !dailyDone);
+}
+
 /* ── Render helpers ── */
 function getTile(row: number, col: number): HTMLElement {
   return document.getElementById(`wg-tile-${row}-${col}`)!;
@@ -831,19 +1113,35 @@ function paintCurrentRow() {
   }
 }
 
+function resetBoardUI() {
+  for (let r = 0; r < MAX_GUESSES; r++) {
+    const rowEl = getRow(r);
+    rowEl.classList.remove('shake');
+    for (let c = 0; c < WORD_LENGTH; c++) {
+      const tile = getTile(r, c);
+      tile.textContent = '';
+      tile.dataset.state = 'empty';
+      tile.classList.remove('flip-out', 'flip-in', 'bounce');
+    }
+  }
+  keyStates = {};
+  const allKeys = keyboard.querySelectorAll<HTMLElement>('.wg-key');
+  allKeys.forEach((key) => {
+    delete key.dataset.state;
+  });
+}
+
 function restoreBoard() {
-  // Re-render all already-submitted guesses (instant, no animation)
+  resetBoardUI();
   for (let r = 0; r < guesses.length; r++) {
     for (let c = 0; c < WORD_LENGTH; c++) {
       const g = guesses[r][c];
       setTile(r, c, g.letter, g.state);
     }
-    // Update keyboard colours from this row
     for (const g of guesses[r]) {
       updateKeyState(g.letter, g.state);
     }
   }
-  // Re-render current input (if game still playing)
   if (gameState === 'playing') paintCurrentRow();
   renderKeys();
 }
@@ -855,10 +1153,6 @@ function renderKeys() {
   }
 }
 
-/**
- * Only upgrade key state — green beats yellow beats gray.
- * Never downgrade a green key to yellow or gray.
- */
 const STATE_PRIORITY: Record<string, number> = { gray: 1, yellow: 2, green: 3 };
 function updateKeyState(letter: string, state: string) {
   const cur = keyStates[letter];
@@ -875,14 +1169,11 @@ function revealRow(row: number, results: Array<{ letter: string; state: string }
       const delay = c * FLIP_DELAY_PER_TILE;
 
       setTimeout(() => {
-        // Flip out
         tile.classList.add('flip-out');
         tile.addEventListener('animationend', function onFlipOut() {
           tile.removeEventListener('animationend', onFlipOut);
           tile.classList.remove('flip-out');
-          // Apply colour at the midpoint (tile is face-down)
           tile.dataset.state = results[c].state;
-          // Flip in
           tile.classList.add('flip-in');
           tile.addEventListener('animationend', function onFlipIn() {
             tile.removeEventListener('animationend', onFlipIn);
@@ -898,7 +1189,7 @@ function revealRow(row: number, results: Array<{ letter: string; state: string }
 function shakeRow(row: number) {
   const el = getRow(row);
   el.classList.remove('shake');
-  void el.offsetWidth; // reflow
+  void el.offsetWidth;
   el.classList.add('shake');
   el.addEventListener('animationend', () => el.classList.remove('shake'), { once: true });
 }
@@ -924,7 +1215,11 @@ function showToast(msg: string, duration = 1800) {
 
 /* ── Persistence ── */
 function persistState() {
-  saveTodayState({ dateKey, guesses, currentInput, gameState });
+  if (currentMode === 'daily') {
+    saveTodayState({ dateKey, guesses, currentInput, gameState });
+  } else {
+    saveLevelState({ level: currentLevel, guesses, currentInput, gameState });
+  }
 }
 
 /* ── Stats rendering ── */
@@ -951,6 +1246,150 @@ function renderStats(highlightRow?: number) {
   }
 }
 
+/* ── Action Bar UI (Next Level / Retry) ── */
+function updateActionUI(won: boolean) {
+  const isDaily = currentMode === 'daily';
+  const nextTargetLevel = isDaily ? currentLevel : currentLevel + 1;
+  const nextBtnText = isDaily
+    ? `Play Level ${nextTargetLevel} ➔`
+    : `Next Level (Level ${nextTargetLevel}) ➔`;
+
+  actionNextBtn.querySelector('span')!.textContent = nextBtnText;
+  modalNextBtn.querySelector('span')!.textContent = nextBtnText;
+
+  if (won) {
+    actionTitle.textContent = isDaily ? 'Daily Word Solved! 🎉' : `Level ${currentLevel} Cleared! 🎉`;
+    actionSub.textContent = isDaily
+      ? 'Outstanding! Keep going in Level Mode.'
+      : `Ready for Level ${nextTargetLevel}?`;
+    actionRetryBtn.classList.add('wg-hidden');
+    modalRetryBtn.classList.add('wg-hidden');
+  } else {
+    actionTitle.textContent = `The word was ${answer}`;
+    actionSub.textContent = 'Keep trying — practice makes perfect!';
+    actionRetryBtn.classList.remove('wg-hidden');
+    modalRetryBtn.classList.remove('wg-hidden');
+  }
+
+  actionBar.classList.remove('wg-hidden');
+  modalActions.classList.remove('wg-hidden');
+}
+
+function hideActionUI() {
+  actionBar.classList.add('wg-hidden');
+  modalActions.classList.add('wg-hidden');
+}
+
+/* ── Next Level / Replay handling ── */
+function startNextLevel() {
+  if (isAnimating) return;
+  closeStats();
+  hideActionUI();
+
+  if (currentMode === 'daily') {
+    currentMode = 'levels';
+    saveGameMode('levels');
+  } else {
+    currentLevel++;
+    saveCurrentLevel(currentLevel);
+    clearLevelState();
+  }
+
+  updateModeUI();
+  initCurrentGame();
+  showToast(`Level ${currentLevel} — Guess the word!`);
+  if (!soundMuted) {
+    sound.tick();
+  }
+}
+
+function retryCurrentLevel() {
+  if (isAnimating) return;
+  closeStats();
+  hideActionUI();
+  if (currentMode === 'levels') {
+    clearLevelState();
+  }
+  initCurrentGame();
+  showToast('Try again! You got this.');
+}
+
+function initCurrentGame() {
+  resetBoardUI();
+  guesses = [];
+  currentInput = '';
+  gameState = 'playing';
+
+  if (currentMode === 'daily') {
+    answer = getDailyWord();
+    saveTodayState({ dateKey, guesses, currentInput, gameState });
+  } else {
+    answer = getLevelWord(currentLevel);
+    saveLevelState({ level: currentLevel, guesses, currentInput, gameState });
+  }
+
+  paintCurrentRow();
+}
+
+function switchMode(newMode: GameMode) {
+  if (isAnimating || currentMode === newMode) return;
+  closeStats();
+  hideActionUI();
+  currentMode = newMode;
+  saveGameMode(newMode);
+  updateModeUI();
+  loadModeGame();
+}
+
+function loadModeGame() {
+  resetBoardUI();
+  guesses = [];
+  currentInput = '';
+  gameState = 'playing';
+
+  if (currentMode === 'daily') {
+    answer = getDailyWord();
+    const saved = loadTodayState();
+    if (saved && saved.dateKey === dateKey) {
+      guesses = saved.guesses;
+      currentInput = saved.currentInput ?? '';
+      gameState = saved.gameState;
+      restoreBoard();
+
+      if (gameState !== 'playing') {
+        const won = gameState === 'won';
+        resultMsg.textContent = won
+          ? `Solved in ${guesses.length}/${MAX_GUESSES} guess${guesses.length === 1 ? '' : 'es'}!`
+          : `The word was ${answer}. Better luck tomorrow!`;
+        resultMsg.className = `wg-result-msg ${won ? 'won' : 'lost'}`;
+        updateActionUI(won);
+      }
+    } else {
+      paintCurrentRow();
+    }
+  } else {
+    answer = getLevelWord(currentLevel);
+    const saved = loadLevelState();
+    if (saved && saved.level === currentLevel) {
+      guesses = saved.guesses;
+      currentInput = saved.currentInput ?? '';
+      gameState = saved.gameState;
+      restoreBoard();
+
+      if (gameState !== 'playing') {
+        const won = gameState === 'won';
+        resultMsg.textContent = won
+          ? `Level ${currentLevel} Cleared in ${guesses.length}/${MAX_GUESSES} guess${guesses.length === 1 ? '' : 'es'}!`
+          : `The word was ${answer}. Try again!`;
+        resultMsg.className = `wg-result-msg ${won ? 'won' : 'lost'}`;
+        updateActionUI(won);
+      }
+    } else {
+      paintCurrentRow();
+    }
+  }
+}
+
 /* ── Win/loss handling ── */
 function handleWin(guessCount: number) {
   gameState = 'won';
@@ -966,8 +1405,11 @@ function handleWin(guessCount: number) {
   const { currentStreak, bestStreak } = computeNewStreak(stats, dateKey, true);
   stats.currentStreak = currentStreak;
   stats.bestStreak = bestStreak;
-  stats.history[dateKey] = { won: true, guesses: guessCount };
+  if (currentMode === 'daily') {
+    stats.history[dateKey] = { won: true, guesses: guessCount };
+  }
   saveStats(stats);
+  updateModeUI();
 
   bounceRow(guessCount - 1);
   buzzVibrate([60, 30, 60, 30, 120]);
@@ -979,8 +1421,10 @@ function handleWin(guessCount: number) {
   setTimeout(() => {
     const msgs = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
     const msg = msgs[Math.min(guessCount - 1, msgs.length - 1)];
-    resultMsg.textContent = `${msg} Solved in ${guessCount}/${MAX_GUESSES} guess${guessCount === 1 ? '' : 'es'}.`;
+    const label = currentMode === 'daily' ? 'Daily Word' : `Level ${currentLevel}`;
+    resultMsg.textContent = `${msg} ${label} solved in ${guessCount}/${MAX_GUESSES} guess${guessCount === 1 ? '' : 'es'}.`;
     resultMsg.className = 'wg-result-msg won';
+    updateActionUI(true);
     openStats();
     burstConfetti(board);
   }, REVEAL_DONE_DELAY + 400);
@@ -996,14 +1440,19 @@ function handleLoss() {
   const { currentStreak, bestStreak } = computeNewStreak(stats, dateKey, false);
   stats.currentStreak = currentStreak;
   stats.bestStreak = bestStreak;
-  stats.history[dateKey] = { won: false, guesses: MAX_GUESSES };
+  if (currentMode === 'daily') {
+    stats.history[dateKey] = { won: false, guesses: MAX_GUESSES };
+  }
   saveStats(stats);
+  updateModeUI();
 
   buzzVibrate([200]);
 
   setTimeout(() => {
-    resultMsg.textContent = `The word was ${answer}. Better luck tomorrow!`;
+    const label = currentMode === 'daily' ? 'Better luck tomorrow!' : 'Try again!';
+    resultMsg.textContent = `The word was ${answer}. ${label}`;
     resultMsg.className = 'wg-result-msg lost';
+    updateActionUI(false);
     openStats();
   }, REVEAL_DONE_DELAY + 300);
 }
@@ -1026,7 +1475,12 @@ function handleBackspace() {
 }
 
 async function handleEnter() {
-  if (gameState !== 'playing' || isAnimating) return;
+  if (gameState !== 'playing' || isAnimating) {
+    if (gameState !== 'playing') {
+      startNextLevel();
+    }
+    return;
+  }
 
   if (currentInput.length < WORD_LENGTH) {
     showToast('Not enough letters');
@@ -1048,7 +1502,6 @@ async function handleEnter() {
   guesses.push(results);
   currentInput = '';
 
-  // Update key states (before animation so there's no lag on keyboard)
   for (const r of results) {
     updateKeyState(r.letter, r.state);
   }
@@ -1070,12 +1523,27 @@ async function handleEnter() {
   }
 }
 
+/* ── Event bindings ── */
+modeLevelsBtn.addEventListener('click', () => switchMode('levels'));
+modeDailyBtn.addEventListener('click', () => switchMode('daily'));
+
+actionNextBtn.addEventListener('click', startNextLevel);
+actionRetryBtn.addEventListener('click', retryCurrentLevel);
+modalNextBtn.addEventListener('click', startNextLevel);
+modalRetryBtn.addEventListener('click', retryCurrentLevel);
+
 /* ── Physical keyboard ── */
 document.addEventListener('keydown', (e: KeyboardEvent) => {
   if (e.ctrlKey || e.altKey || e.metaKey) return;
-  if (e.key === 'Enter') { e.preventDefault(); void handleEnter(); }
-  else if (e.key === 'Backspace') { e.preventDefault(); handleBackspace(); }
-  else if (/^[a-zA-Z]$/.test(e.key)) { handleLetter(e.key.toUpperCase()); }
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    void handleEnter();
+  } else if (e.key === 'Backspace') {
+    e.preventDefault();
+    handleBackspace();
+  } else if (/^[a-zA-Z]$/.test(e.key)) {
+    handleLetter(e.key.toUpperCase());
+  }
 });
 
 /* ── On-screen keyboard ── */
@@ -1090,35 +1558,18 @@ keyboard.addEventListener('click', (e: MouseEvent) => {
 
 /* ── Load / restore state on mount ── */
 (function init() {
-  const saved = loadTodayState();
   let stats = loadStats();
   stats = adjustStreakForMissedDays(stats, dateKey);
 
-  if (saved && saved.dateKey === dateKey) {
-    // Restore in-progress or completed game from today
-    guesses        = saved.guesses;
-    currentInput   = saved.currentInput ?? '';
-    gameState      = saved.gameState;
-    restoreBoard();
-
-    if (gameState !== 'playing') {
-      // Game already finished — show result immediately
-      const won = gameState === 'won';
-      resultMsg.textContent = won
-        ? `Solved in ${guesses.length}/${MAX_GUESSES} guess${guesses.length === 1 ? '' : 'es'}!`
-        : `The word was ${answer}. Better luck tomorrow!`;
-      resultMsg.className = `wg-result-msg ${won ? 'won' : 'lost'}`;
-      // Open stats panel after a small delay
-      setTimeout(() => openStats(), 300);
-    }
-  } else {
-    // Fresh game for today
-    guesses      = [];
-    currentInput = '';
-    gameState    = 'playing';
-    paintCurrentRow();
+  // If daily is already won or finished, and user hasn't explicitly set mode, default to levels
+  const savedDaily = loadTodayState();
+  if (savedDaily && savedDaily.dateKey === dateKey && savedDaily.gameState !== 'playing' && !localStorage.getItem('randomlyo:wg:mode')) {
+    currentMode = 'levels';
+    saveGameMode('levels');
   }
 
+  updateModeUI();
+  loadModeGame();
   renderStats();
 })();
 </script>

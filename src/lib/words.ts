@@ -263,3 +263,18 @@ export function getDailyWord(): string {
   const index = ((epochDays % DAILY_WORDS.length) + DAILY_WORDS.length) % DAILY_WORDS.length;
   return DAILY_WORDS[index];
 }
+
+/**
+ * Deterministic word selection for unlimited levels.
+ * Level 1, Level 2, ...
+ * Uses a coprime step (367 with prime length 997) so every word in the curated
+ * list appears once in a well-shuffled order before cycling.
+ */
+export function getLevelWord(level: number): string {
+  const safeLevel = Math.max(1, Math.floor(level));
+  const prime = DAILY_WORDS.length;
+  const step = 367;
+  const index = (((safeLevel - 1) * step) % prime + prime) % prime;
+  return DAILY_WORDS[index];
+}
+
