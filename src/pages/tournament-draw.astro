@@ -286,8 +286,9 @@ const description = 'Create a fair single-elimination bracket with random seedin
       columns.reduce((sum, column) => sum + column.width, 0) +
       COLUMN_GAP * (columns.length - 1);
 
+    // Add extra space for round labels above cards
     container.style.width = `${width}px`;
-    container.style.height = `${height}px`;
+    container.style.height = `${height + 30}px`;
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'connector-layer');
@@ -313,10 +314,13 @@ const description = 'Create a fair single-elimination bracket with random seedin
         : roundName(match.round, bracket.totalRounds);
       columnEl.appendChild(label);
 
+      // Push cards down so labels don't overlap
+      const labelHeight = 22;
+
       column.matches.forEach((roundMatch) => {
         const top = column.kind === 'final'
-          ? (sideHeight(bracket) - CARD_H) / 2
-          : matchTop(roundMatch);
+          ? (sideHeight(bracket) - CARD_H) / 2 + 14
+          : matchTop(roundMatch) + 14;
         const left = (column.width - CARD_W) / 2;
         const card = createMatchCard(roundMatch, left, top, bracket.totalRounds);
         columnEl.appendChild(card);
@@ -355,8 +359,9 @@ const description = 'Create a fair single-elimination bracket with random seedin
     emptyState.classList.add('hidden');
 
     renderBracketTo(currentBracket, bracketStage, false);
-    bracketStage.style.transform = 'scale(0.92)';
-    bracketStage.style.transformOrigin = 'center top';
+    // No scale down — bracket uses full visible width
+    bracketStage.style.transform = 'none';
+    bracketStage.style.transformOrigin = '';
 
     updateStatus();
   }
@@ -527,7 +532,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
     display: flex;
     flex-direction: column;
     align-items: start;
-    gap: 2rem;
+    gap: 1.25rem;
   }
 
   /* ===== PANEL SHARED ===== */
@@ -544,8 +549,8 @@ const description = 'Create a fair single-elimination bracket with random seedin
     max-width: 1200px;
     transition: box-shadow 200ms ease;
   }
-  .tournament-panel { padding: 2rem 2.25rem; }
-  .bracket-panel { padding: 1.5rem 2rem; min-width: 0; }
+  .tournament-panel { padding: 1.25rem 1.5rem; }
+  .bracket-panel { padding: 1.25rem; min-width: 0; }
 
   /* ===== EYEBROW + HEADINGS ===== */
   .panel-eyebrow-wrap { margin-bottom: 0.35rem; }
@@ -753,7 +758,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
     align-items: flex-start;
     justify-content: center;
     margin: 0 auto;
-    transform: scale(0.92);
+    transform: scale(1);
     transform-origin: center top;
   }
   .single-match-stage {
@@ -795,13 +800,13 @@ const description = 'Create a fair single-elimination bracket with random seedin
   }
   .round-label {
     position: absolute;
-    top: -10px;
+    top: -24px;
     left: 0;
     width: 100%;
     color: var(--color-brand-deep);
     font-size: 0.65rem;
-    font-weight: 800;
-    letter-spacing: 0.11em;
+    font-weight: 900;
+    letter-spacing: 0.14em;
     text-align: center;
     text-transform: uppercase;
   }
@@ -810,7 +815,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
   .bracket-match {
     position: absolute;
     z-index: 2;
-    width: 160px;
+    width: 168px;
     overflow: visible;
     border: 1px solid #e1e7f1;
     border-radius: 0.95rem;
