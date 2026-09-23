@@ -111,21 +111,6 @@ const description = 'Create a fair single-elimination bracket with random seedin
     type BracketMatch,
   } from '../lib/bracket';
 
-  const CARD_W = 140;
-  const CARD_H = 56;
-  const COLUMN_W = 160;
-  const FINAL_W = 170;
-  const COLUMN_GAP = 14;
-  const STAGE_PAD = 24;
-  const STAGE_OFFSET = 56;
-  const PITCH = CARD_H + 24;
-
-  interface BracketColumn {
-    matches: BracketMatch[];
-    width: number;
-    kind: 'round' | 'final';
-  }
-
   const participantsEl = document.getElementById('participantsList') as HTMLTextAreaElement;
   const generateBtn = document.getElementById('generateBtn') as HTMLButtonElement;
   const resetBtn = document.getElementById('resetBtn') as HTMLButtonElement;
@@ -140,41 +125,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
 
   let currentBracket: Bracket | null = null;
 
-  function matchTop(match: BracketMatch): number {
-    const position = match.index * 2 ** (match.round + 1) + 2 ** match.round;
-    return ((position - 1) * PITCH) / 2;
-  }
-
-  function firstRoundCount(bracket: Bracket): number {
-    return bracket.leftRounds[0]?.length ?? bracket.rightRounds[0]?.length ?? 1;
-  }
-
-  function sideHeight(bracket: Bracket): number {
-    return firstRoundCount(bracket) * PITCH - 24;
-  }
-
-  function getColumns(bracket: Bracket): BracketColumn[] {
-    const left = bracket.leftRounds.map((matches) => ({
-      matches,
-      width: COLUMN_W,
-      kind: 'round' as const,
-    }));
-    const right = bracket.rightRounds
-      .slice()
-      .reverse()
-      .map((matches) => ({
-        matches,
-        width: COLUMN_W,
-        kind: 'round' as const,
-      }));
-
-    return [
-      ...left,
-      { matches: [bracket.final], width: FINAL_W, kind: 'final' as const },
-      ...right,
-    ];
-  }
-
+  /* ===== DATA HELPERS ===== */
   function placeholderFor(match: BracketMatch, side: 0 | 1): string {
     const sourceId = match.feedsFrom[side];
     if (!sourceId) return 'Bye';
@@ -194,16 +145,42 @@ const description = 'Create a fair single-elimination bracket with random seedin
     return 'competitor competitor-active';
   }
 
-  function createMatchCard(
-    match: BracketMatch,
-    left: number,
-    top: number,
-    totalRounds: number,
-  ): HTMLElement {
+  /* ===== ROUND COLUMNS FROM DATA ===== */
+  interface BracketColumn {
+    label: string;
+    kind: 'left-round' | 'final' | 'right-round';
+    matches: BracketMatch[];
+    roundNumbers: number[]; // for label display
+  }
+
+  function getColumns(bracket: Bracket): BracketColumn[] {
+    const leftRounds = bracket.leftRounds.map((matches, idx) => ({
+      matches,
+      kind: 'left-round' as const,
+      label: roundName(idx, bracket.totalRounds),
+      roundNumbers: [idx],
+    }));
+    const rightRoundsReversed = [...bracket.rightRounds].reverse().map((matches, revIdx) => {
+      const originalIdx = bracket.rightRounds.length - 1 - revIdx;
+      return {
+        matches,
+        kind: 'right-round' as const,
+        label: roundName(originalIdx, bracket.totalRounds),
+        roundNumbers: [originalIdx],
+      };
+    });
+    return [
+      ...leftRounds,
+      { matches: [bracket.final], kind: 'final' as const, label: 'Finals', roundNumbers: [bracket.totalRounds - 1] },
+      ...rightRoundsReversed,
+    ];
+  }
+
+  /* ===== CARD CREATION ===== */
+  function createMatchCard(match: BracketMatch): HTMLElement {
     const card = document.createElement('article');
     card.className = `bracket-match${match.bye ? ' bracket-match-bye' : ''}`;
-    card.style.left = `${left}px`;
-    card.style.top = `${top}px`;
+    card.setAttribute('data-match-id', match.id);
 
     const header = document.createElement('div');
     header.className = 'match-header';
@@ -232,147 +209,92 @@ const description = 'Create a fair single-elimination bracket with random seedin
       byeLabel.textContent = 'Bye';
       card.appendChild(byeLabel);
     }
-
     return card;
   }
 
-  function connectorPath(
-    start: { x: number; y: number },
-    end: { x: number; y: number },
-  ): string {
-    const middle = (start.x + end.x) / 2;
-    return `M ${start.x} ${start.y} L ${middle} ${start.y} L ${middle} ${end.y} L ${end.x} ${end.y}`;
-  }
-
+  /* ===== BRACKET GRID RENDER ===== */
   function renderBracketTo(bracket: Bracket, container: HTMLElement, isExport = false) {
     container.replaceChildren();
-    container.className = isExport ? 'bracket-export-stage' : 'bracket-stage';
-    container.style.display = '';
-    container.style.placeItems = '';
-    container.style.width = '';
-    container.style.height = '';
-
-    if (bracket.size === 2) {
-      container.className = isExport ? 'bracket-export-stage single-match-stage' : 'bracket-stage single-match-stage';
-      if (isExport) {
-          container.style.width = '500px';
-          container.style.height = '200px';
-      } else {
-          container.style.width = '100%';
-          container.style.height = '190px';
-          container.style.display = 'grid';
-          container.style.placeItems = 'center';
-      }
-
-      const match = bracket.final;
-      const card = createMatchCard(match, 0, 0, bracket.totalRounds);
-      card.classList.add('single-match-card');
-      card.style.position = isExport ? 'absolute' : 'relative';
-      if (isExport) {
-          card.style.left = '180px';
-          card.style.top = '70px';
-      } else {
-          card.style.left = 'auto';
-          card.style.top = 'auto';
-      }
-      container.appendChild(card);
-      return;
-    }
+    container.className = isExport ? 'bracket-grid bracket-export-stage' : 'bracket-grid';
+    container.style.display = 'grid';
+    container.style.gap = '0';
 
     const columns = getColumns(bracket);
-    const height = sideHeight(bracket) + STAGE_OFFSET * 2;
-    const width =
-      STAGE_PAD * 2 +
-      columns.reduce((sum, column) => sum + column.width, 0) +
-      COLUMN_GAP * (columns.length - 1);
+    // Dynamic column count based on data
+    const colTemplate = columns.map((c) => (c.kind === 'final' ? '220px' : '200px')).join(' ');
+    container.style.gridTemplateColumns = colTemplate;
 
-    // Add extra space for round labels above cards
-    container.style.width = `${width}px`;
-    container.style.height = `${height + 30}px`;
+    // Header row for headings
+    const headerRow = document.createElement('div');
+    headerRow.className = 'bracket-header-row';
+    headerRow.style.display = 'contents';
+    columns.forEach((col) => {
+      const label = document.createElement('div');
+      label.className = `round-label column-label ${col.kind}`;
+      label.textContent = col.label;
+      label.style.gridColumn = columns.indexOf(col) + 1;
+      headerRow.appendChild(label);
+    });
+    container.appendChild(headerRow);
 
+    // Find max number of matches in any column (for vertical alignment)
+    const maxMatches = Math.max(...columns.map((c) => c.matches.length));
+
+    // Create rows: one per "match slot" vertically
+    for (let row = 0; row < maxMatches; row++) {
+      columns.forEach((col) => {
+        const cell = document.createElement('div');
+        cell.className = 'bracket-cell';
+        cell.style.display = 'flex';
+        cell.style.justifyContent = 'center';
+        cell.style.alignItems = 'center';
+        cell.style.padding = '0.5rem';
+
+        const match = col.matches[row];
+        if (match) {
+          const card = createMatchCard(match);
+          cell.appendChild(card);
+        } else {
+          // Spacer cell for shorter columns to keep alignment
+          const spacer = document.createElement('div');
+          spacer.className = 'bracket-spacer';
+          spacer.style.height = '100px';
+          spacer.style.visibility = 'hidden';
+          cell.appendChild(spacer);
+        }
+        container.appendChild(cell);
+      });
+    }
+
+    // Connector SVG layer (absolute over grid)
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'connector-layer');
     svg.setAttribute('aria-hidden', 'true');
-    svg.setAttribute('width', String(width));
-    svg.setAttribute('height', String(height));
+    svg.style.position = 'absolute';
+    svg.style.inset = '0';
+    svg.style.width = '100%';
+    svg.style.height = '100%';
+    svg.style.pointerEvents = 'none';
+    svg.style.zIndex = '0';
     container.appendChild(svg);
-
-    const positions = new Map<string, { x: number; y: number; match: BracketMatch }>();
-    let x = STAGE_PAD;
-
-    columns.forEach((column) => {
-      const columnEl = document.createElement('div');
-      columnEl.className = column.kind === 'final' ? 'bracket-round bracket-final-column' : 'bracket-round';
-      columnEl.style.width = `${column.width}px`;
-      columnEl.style.height = `${height}px`;
-
-      const label = document.createElement('div');
-      label.className = 'round-label';
-      const match = column.matches[0];
-      label.textContent = column.kind === 'final'
-        ? roundName(bracket.totalRounds - 1, bracket.totalRounds)
-        : roundName(match.round, bracket.totalRounds);
-      columnEl.appendChild(label);
-
-      // Push cards down so labels don't overlap
-      const labelHeight = 22;
-
-      column.matches.forEach((roundMatch) => {
-        const top = column.kind === 'final'
-          ? (sideHeight(bracket) - CARD_H) / 2 + 14
-          : matchTop(roundMatch) + 14;
-        const left = (column.width - CARD_W) / 2;
-        const card = createMatchCard(roundMatch, left, top, bracket.totalRounds);
-        columnEl.appendChild(card);
-
-        positions.set(roundMatch.id, {
-          x: x + left,
-          y: STAGE_OFFSET + top,
-          match: roundMatch,
-        });
-      });
-
-      container.appendChild(columnEl);
-      x += column.width + COLUMN_GAP;
-    });
-
-    for (const match of bracket.leftRounds.flat().concat(bracket.rightRounds.flat())) {
-      if (!match.feedsTo) continue;
-      const start = positions.get(match.id);
-      const end = positions.get(match.feedsTo.matchId);
-      if (!start || !end) continue;
-
-      const startY = start.y + CARD_H / 2;
-      const endY = end.y + CARD_H / 2;
-      const startX = match.side === 'left' ? start.x + CARD_W : start.x;
-      const endX = match.side === 'left' ? end.x : end.x + CARD_W;
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', connectorPath({ x: startX, y: startY }, { x: endX, y: endY }));
-      svg.appendChild(path);
-    }
   }
 
+  /* ===== MAIN RENDER ===== */
   function renderBracket() {
     if (!currentBracket) return;
-
     bracketScroll.classList.remove('hidden');
     emptyState.classList.add('hidden');
-
     renderBracketTo(currentBracket, bracketStage, false);
-    // No scale down — bracket uses full visible width
     bracketStage.style.transform = 'none';
-    bracketStage.style.transformOrigin = '';
-
+    bracketStage.style.transformOrigin = 'center top';
     updateStatus();
   }
 
   function updateStatus() {
     if (!currentBracket) return;
-
     const progress = bracketProgress(currentBracket);
     progressLabel.textContent = `${progress.decided} / ${progress.total} matches decided`;
     progressLabel.classList.toggle('hidden', progress.total === 0);
-
     const winner = champion(currentBracket);
     championName.textContent = winner ?? '';
     championPanel.classList.toggle('hidden', !winner);
@@ -382,12 +304,10 @@ const description = 'Create a fair single-elimination bracket with random seedin
     errorMessage.textContent = message;
     errorContainer.classList.remove('hidden');
   }
-
   function clearError() {
     errorMessage.textContent = '';
     errorContainer.classList.add('hidden');
   }
-
   function resetTool() {
     participantsEl.value = '';
     currentBracket = null;
@@ -406,7 +326,6 @@ const description = 'Create a fair single-elimination bracket with random seedin
       if (result.items.length < 2 || result.items.length > 32) {
         throw new Error('Enter between 2 and 32 participants.');
       }
-
       currentBracket = createBracket(result.items);
       clearError();
       renderBracket();
@@ -414,13 +333,11 @@ const description = 'Create a fair single-elimination bracket with random seedin
       showError(error instanceof Error ? error.message : 'Unable to create this bracket.');
     }
   });
-
   resetBtn.addEventListener('click', resetTool);
 
   bracketStage.addEventListener('click', (event) => {
     const target = event.target as HTMLButtonElement;
     if (!target.matches('button[data-match-id]') || !currentBracket) return;
-
     const matchId = target.dataset.matchId;
     const side = Number(target.dataset.side) as 0 | 1;
     if (setWinner(currentBracket, matchId, side)) {
@@ -447,79 +364,121 @@ const description = 'Create a fair single-elimination bracket with random seedin
   const bracketExportStage = document.getElementById('bracketExportStage') as HTMLElement;
 
   async function exportTournament(type: 'png' | 'pdf') {
-      if (!currentBracket) return;
+    if (!currentBracket) return;
+    const original = document.getElementById('bracketStage') as HTMLElement;
+    const clone = document.createElement('div');
+    clone.className = 'bracket-export-stage bracket-grid';
+    clone.style.display = 'grid';
+    clone.style.gap = '0';
+    clone.style.padding = '2rem';
+    clone.style.backgroundColor = '#fff';
+    clone.style.width = 'auto';
+    clone.style.height = 'auto';
 
-      const original = document.getElementById('bracketStage') as HTMLElement;
-      const clone = original.cloneNode(true) as HTMLElement;
+    // Rebuild clean export grid from data
+    const columns = getColumns(currentBracket);
+    const colTemplate = columns.map((c) => (c.kind === 'final' ? '220px' : '200px')).join(' ');
+    clone.style.gridTemplateColumns = colTemplate;
 
-      const tempWrapper = document.createElement('div');
-      tempWrapper.style.position = 'absolute';
-      tempWrapper.style.top = '0';
-      tempWrapper.style.left = '-100000px';
-      tempWrapper.style.opacity = '0';
-      tempWrapper.style.pointerEvents = 'none';
-      tempWrapper.style.overflow = 'visible';
-      tempWrapper.style.display = 'block';
-      tempWrapper.appendChild(clone);
-      document.body.appendChild(tempWrapper);
+    // Headings
+    columns.forEach((col, idx) => {
+      const label = document.createElement('div');
+      label.className = `round-label column-label ${col.kind}`;
+      label.textContent = col.label;
+      label.style.gridColumn = `${idx + 1}`;
+      label.style.gridRow = '1';
+      clone.appendChild(label);
+    });
 
-      try {
-        clone.style.transform = 'none';
-        clone.style.transformOrigin = '';
-        clone.style.overflow = 'visible';
-        clone.style.width = original.scrollWidth ? `${original.scrollWidth}px` : 'auto';
-        clone.style.height = original.scrollHeight ? `${original.scrollHeight}px` : 'auto';
-        clone.style.display = 'flex';
-        clone.className = 'bracket-stage';
+    const maxMatches = Math.max(...columns.map((c) => c.matches.length));
+    for (let row = 0; row < maxMatches; row++) {
+      columns.forEach((col, idx) => {
+        const cell = document.createElement('div');
+        cell.style.display = 'flex';
+        cell.style.justifyContent = 'center';
+        cell.style.alignItems = 'center';
+        cell.style.padding = '0.5rem';
+        cell.style.gridColumn = `${idx + 1}`;
+        cell.style.gridRow = `${row + 2}`;
 
-        const allDescendants = Array.from(clone.querySelectorAll('*'));
-        let minX = Infinity;
-        let minY = Infinity;
-        let maxX = -Infinity;
-        let maxY = -Infinity;
-        allDescendants.forEach((el) => {
-          const rect = (el as HTMLElement).getBoundingClientRect();
-          if (rect.width === 0 && rect.height === 0) return;
-          minX = Math.min(minX, rect.left);
-          minY = Math.min(minY, rect.top);
-          maxX = Math.max(maxX, rect.right);
-          maxY = Math.max(maxY, rect.bottom);
-        });
-        const containerRect = clone.getBoundingClientRect();
-        minX = Math.min(minX, containerRect.left);
-        minY = Math.min(minY, containerRect.top);
-        maxX = Math.max(maxX, containerRect.right);
-        maxY = Math.max(maxY, containerRect.bottom);
-        const completeWidth = Math.max(0, maxX - minX + 40);
-        const completeHeight = Math.max(0, maxY - minY + 40);
-
-        const canvas = await html2canvas(clone, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-          width: completeWidth,
-          height: completeHeight,
-          windowWidth: completeWidth,
-          windowHeight: completeHeight,
-          scrollX: 0,
-          scrollY: 0,
-        });
-
-        if (type === 'png') {
-          const link = document.createElement('a');
-          link.download = 'tournament-bracket.png';
-          link.href = canvas.toDataURL('image/png');
-          link.click();
+        const match = col.matches[row];
+        if (match) {
+          const card = createMatchCard(match);
+          card.style.position = 'relative';
+          card.style.width = '190px';
+          card.style.height = '86px';
+          cell.appendChild(card);
         } else {
-          const imgData = canvas.toDataURL('image/png');
-          const pageW = completeWidth;
-          const pageH = completeHeight;
-          const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [pageW, pageH] });
-          pdf.addImage(imgData, 'PNG', 0, 0, pageW, pageH);
-          pdf.save('tournament-bracket.pdf');
+          const spacer = document.createElement('div');
+          spacer.style.height = '86px';
+          spacer.style.visibility = 'hidden';
+          cell.appendChild(spacer);
         }
-      } finally {
-        tempWrapper.remove();
+        clone.appendChild(cell);
+      });
+    }
+
+    // Champion below final column
+    const winner = champion(currentBracket);
+    if (winner) {
+      const championRow = document.createElement('div');
+      championRow.style.gridColumn = '3';
+      championRow.style.gridRow = `${maxMatches + 2}`;
+      championRow.style.display = 'flex';
+      championRow.style.justifyContent = 'center';
+      championRow.style.alignItems = 'center';
+      championRow.style.padding = '1rem 0';
+      championRow.innerHTML = `
+        <div class="export-champion" style="text-align:center;border:2px solid #e8c080;border-radius:1rem;background:linear-gradient(135deg,#fffdf5,#fdf5e6);padding:0.9rem 1.5rem;box-shadow:0 4px 14px rgba(180,132,20,0.08);">
+          <div style="font-size:1.3rem;line-height:1;">🏆</div>
+          <div style="font-size:0.58rem;font-weight:900;letter-spacing:0.14em;text-transform:uppercase;color:#a07e30;margin-top:0.2rem;">Champion</div>
+          <strong style="display:block;color:#17233f;font-size:1.05rem;font-weight:800;margin-top:0.3rem;">${winner}</strong>
+        </div>
+      `;
+      clone.appendChild(championRow);
+    }
+
+    const tempWrapper = document.createElement('div');
+    tempWrapper.style.position = 'absolute';
+    tempWrapper.style.top = '0';
+    tempWrapper.style.left = '-100000px';
+    tempWrapper.style.opacity = '0';
+    tempWrapper.style.pointerEvents = 'none';
+    tempWrapper.style.overflow = 'visible';
+    tempWrapper.style.display = 'block';
+    tempWrapper.appendChild(clone);
+    document.body.appendChild(tempWrapper);
+
+    try {
+      // Give layout time to settle
+      await new Promise((r) => setTimeout(r, 50));
+      const completeWidth = Math.max(1200, clone.scrollWidth);
+      const completeHeight = Math.max(600, clone.scrollHeight);
+      const canvas = await html2canvas(clone, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        width: completeWidth,
+        height: completeHeight,
+        windowWidth: completeWidth,
+        windowHeight: completeHeight,
+        scrollX: 0,
+        scrollY: 0,
+      });
+
+      if (type === 'png') {
+        const link = document.createElement('a');
+        link.download = 'tournament-bracket.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      } else {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [completeWidth / 2, completeHeight / 2] });
+        pdf.addImage(imgData, 'PNG', 0, 0, completeWidth / 2, completeHeight / 2);
+        pdf.save('tournament-bracket.pdf');
       }
+    } finally {
+      tempWrapper.remove();
+    }
   }
 
   document.getElementById('downloadPng')?.addEventListener('click', () => exportTournament('png'));
@@ -535,7 +494,6 @@ const description = 'Create a fair single-elimination bracket with random seedin
     gap: 1.25rem;
   }
 
-  /* ===== PANEL SHARED ===== */
   .tournament-panel,
   .bracket-panel {
     border: 1px solid var(--color-line);
@@ -551,7 +509,8 @@ const description = 'Create a fair single-elimination bracket with random seedin
   }
   .tournament-panel { padding: 1rem 1.25rem; }
   .bracket-panel {
-    padding: 0.75rem; min-width: 0;
+    padding: 1rem;
+    min-width: 0;
   }
 
   /* ===== EYEBROW + HEADINGS ===== */
@@ -619,7 +578,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
   }
   .bracket-header-right { display: flex; align-items: center; gap: 0.85rem; }
 
@@ -687,7 +646,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
     align-items: center;
     justify-content: center;
     gap: 0.65rem;
-    margin: 0.75rem auto 0;
+    margin: 1rem auto 0;
     max-width: fit-content;
     border: 1.5px solid #f0dca8;
     border-radius: 1.1rem;
@@ -748,76 +707,49 @@ const description = 'Create a fair single-elimination bracket with random seedin
 
   /* ===== SCROLL ===== */
   .bracket-scroll {
-    overflow-x: hidden;
+    overflow-x: auto;
     padding: 0.5rem 0 1rem;
     scrollbar-color: var(--color-brand-deep) var(--color-wash);
   }
 
-  .bracket-stage {
+  /* ===== BRACKET GRID LAYOUT ===== */
+  .bracket-grid {
+    display: grid;
     position: relative;
-    display: flex;
-    min-width: 100%;
-    align-items: flex-start;
-    justify-content: center;
+    width: max-content;
+    max-width: 100%;
     margin: 0 auto;
-    transform: scale(1);
-    transform-origin: center top;
-  }
-  .single-match-stage {
-    display: grid !important;
-    place-items: center;
-    min-height: 190px;
-  }
-  .single-match-card {
-    position: relative !important;
-    left: auto !important;
-    top: auto !important;
+    align-items: start;
+    justify-content: center;
+    padding: 1rem 0.5rem;
   }
 
-  /* ===== CONNECTORS ===== */
-  .connector-layer {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    overflow: visible;
-    pointer-events: none;
-  }
-  .connector-layer path {
-    fill: none;
-    stroke: #b8c4db;
-    stroke-width: 2.2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  /* ===== ROUNDS ===== */
-  .bracket-round {
-    position: relative;
-    z-index: 1;
-    flex: 0 0 auto;
-  }
-  .bracket-final-column .round-label {
-    color: #8a6e2a;
-    font-weight: 900;
-  }
-  .round-label {
-    position: absolute;
-    top: -24px;
-    left: 0;
-    width: 100%;
-    color: var(--color-brand-deep);
+  .bracket-grid > .round-label {
+    text-align: center;
     font-size: 0.65rem;
     font-weight: 900;
     letter-spacing: 0.14em;
-    text-align: center;
     text-transform: uppercase;
+    color: var(--color-brand-deep);
+    padding: 0.35rem 0;
+    margin-bottom: 0.25rem;
+  }
+  .bracket-grid > .round-label.final {
+    color: #8a6e2a;
+  }
+
+  .bracket-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.4rem;
   }
 
   /* ===== MATCH CARD ===== */
   .bracket-match {
-    position: absolute;
-    z-index: 2;
-    width: 168px;
+    position: relative;
+    width: 190px;
+    height: 86px;
     overflow: visible;
     border: 1px solid #e1e7f1;
     border-radius: 0.95rem;
@@ -826,6 +758,8 @@ const description = 'Create a fair single-elimination bracket with random seedin
       0 2px 8px rgba(23, 35, 63, 0.04),
       0 6px 18px rgba(23, 35, 63, 0.05);
     transition: box-shadow 150ms ease, border-color 150ms ease;
+    display: flex;
+    flex-direction: column;
   }
   .bracket-match:hover {
     box-shadow: 0 6px 20px rgba(23, 35, 63, 0.08);
@@ -837,7 +771,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
   .match-header {
     border-bottom: 1px solid #eaeff5;
     background: linear-gradient(135deg, #f6f8fc 0%, #f2f5f9 100%);
-    padding: 0.45rem 0.7rem;
+    padding: 0.35rem 0.7rem;
     color: #6e7b8a;
     font-size: 0.58rem;
     font-weight: 800;
@@ -845,18 +779,19 @@ const description = 'Create a fair single-elimination bracket with random seedin
     text-transform: uppercase;
     border-top-left-radius: 0.95rem;
     border-top-right-radius: 0.95rem;
+    flex-shrink: 0;
   }
 
   /* ===== COMPETITORS ===== */
   .competitor {
     display: block;
     width: 100%;
-    min-height: 2.35rem;
+    flex: 1 1 auto;
     overflow: hidden;
     border: 0;
     border-bottom: 1px solid #eaedf4;
     background: #fff;
-    padding: 0.55rem 0.75rem;
+    padding: 0.45rem 0.75rem;
     color: var(--color-ink);
     font: inherit;
     font-size: 0.8rem;
@@ -912,9 +847,26 @@ const description = 'Create a fair single-elimination bracket with random seedin
     box-shadow: 0 2px 6px rgba(94, 117, 201, 0.25);
   }
 
+  /* ===== CONNECTORS ===== */
+  .connector-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .connector-layer path {
+    fill: none;
+    stroke: #b8c4db;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
   /* ===== MEDIA ===== */
   @media (max-width: 980px) {
     .bracket-panel { min-height: 24rem; }
+    .bracket-match { width: 160px; height: 78px; }
   }
 
   @media (max-width: 560px) {
@@ -924,5 +876,10 @@ const description = 'Create a fair single-elimination bracket with random seedin
     .participant-actions { flex-direction: column; }
     .bracket-panel-header { flex-direction: column; gap: 0.65rem; }
     .bracket-scroll { margin-right: -1rem; margin-left: -1rem; padding-right: 1rem; padding-left: 1rem; }
+    .bracket-match { width: 140px; height: 72px; }
   }
+
+  /* ===== EXPORT GLASSES ===== */
+  .bracket-export-stage { background: #fff; }
+  .export-champion { display: inline-block; }
 </style>
