@@ -444,26 +444,72 @@ const description = 'Create a fair single-elimination bracket with random seedin
 
   async function exportTournament(type: 'png' | 'pdf') {
       if (!currentBracket) return;
-      renderBracketTo(currentBracket, bracketExportStage, true);
-      bracketExportStage.classList.remove('hidden');
 
-      const canvas = await html2canvas(bracketExportStage, {
+      // 1. Clone the real rendered bracket stage (includes connectors + cards + winners)
+      const original = document.getElementById('bracketStage') as HTMLElement;
+      const clone = original.cloneNode(true) as HTMLElement;
+
+      // 2. Create temporary off-screen container
+      const tempWrapper = document.createElement('div');
+      tempWrapper.style.position = 'absolute';
+      tempWrapper.style.top = '-9999px';
+      tempWrapper.style.left = '-9999px';
+      tempWrapper.style.visibility = 'hidden'; // hidden, not display:none so layout computes
+      tempWrapper.style.overflow = 'visible';
+      tempWrapper.style.display = 'block';
+      tempWrapper.appendChild(clone);
+      document.body.appendChild(tempWrapper);
+
+      try {
+        // 3. Remove transforms / clipping so full unscaled bracket is captured
+        clone.style.transform = 'none';
+        clone.style.transformOrigin = '';
+        clone.style.overflow = 'visible';
+        clone.style.width = original.scrollWidth ? `${original.scrollWidth}px` : 'auto';
+        clone.style.height = original.scrollHeight ? `${original.scrollHeight}px` : 'auto';
+        clone.style.display = 'flex';
+        clone.className = 'bracket-stage'; // make sure flex layout applies
+
+        // 4. Measure all descendants to confirm complete width/height
+        const rects = Array.from(clone.querySelectorAll('.bracket-match'))
+          .map((el) => (el as HTMLElement).getBoundingClientRect());
+        let maxRight = 0;
+        let maxBottom = 0;
+        rects.forEach((r) => {
+          maxRight = Math.max(maxRight, r.right);
+          maxBottom = Math.max(maxBottom, r.bottom);
+        });
+        const completeWidth = Math.max(original.scrollWidth || original.clientWidth || 1400, maxRight);
+        const completeHeight = Math.max(original.scrollHeight || original.clientHeight || 700, maxBottom + 40);
+
+        const canvas = await html2canvas(clone, {
           backgroundColor: '#ffffff',
           scale: 2,
-      });
+          width: completeWidth,
+          height: completeHeight,
+          windowWidth: completeWidth,
+          windowHeight: completeHeight,
+          scrollX: 0,
+          scrollY: 0,
+        });
 
-      bracketExportStage.classList.add('hidden');
-
-      if (type === 'png') {
+        if (type === 'png') {
           const link = document.createElement('a');
           link.download = 'tournament-bracket.png';
           link.href = canvas.toDataURL('image/png');
           link.click();
-      } else {
+        } else {
           const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [canvas.width, canvas.height] });
-          pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+          // Proportional landscape PDF using complete canvas dimensions
+          const pageW = completeWidth;
+          const pageH = completeHeight;
+          const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [pageW, pageH] });
+          pdf.addImage(imgData, 'PNG', 0, 0, pageW, pageH);
           pdf.save('tournament-bracket.pdf');
+        }
+      } finally {
+        // 5. Cleanup temporary container
+        tempWrapper.remove();
       }
   }
 
