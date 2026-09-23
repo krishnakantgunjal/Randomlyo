@@ -104,6 +104,16 @@ export const TOOLS: Record<string, Tool> = {
     icon: 'game',
     related: ['randomNumberGenerator'],
   },
+  wordGame: {
+    id: 'wordGame',
+    name: 'Word Game',
+    slug: 'play/word-game',
+    url: '/play/word-game/',
+    description: 'Guess the daily 5-letter word in 6 tries.',
+    category: 'play',
+    icon: 'game',
+    related: ['diceRoller', 'tournamentDraw'],
+  },
 };
 
 export const TOOL_CATEGORIES = {
@@ -120,7 +130,7 @@ export const TOOL_CATEGORIES = {
   play: {
     name: 'PLAY & WIN',
     description: 'Randomize teams, brackets and dice rolls.',
-    tools: [TOOLS.randomTeamGenerator, TOOLS.tournamentDraw, TOOLS.diceRoller],
+    tools: [TOOLS.randomTeamGenerator, TOOLS.tournamentDraw, TOOLS.diceRoller, TOOLS.wordGame],
   },
 };
 

@@ -1,0 +1,1124 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const title = 'Word Game — Guess the Daily 5-Letter Word | Randomlyo';
+const description = 'A daily Wordle-style word-guessing game. One new word every day — 6 attempts, no login, no clutter.';
+
+const WORD_LENGTH = 5;
+const MAX_GUESSES = 6;
+
+// Keyboard rows
+const KB_ROW1 = ['Q','W','E','R','T','Y','U','I','O','P'];
+const KB_ROW2 = ['A','S','D','F','G','H','J','K','L'];
+const KB_ROW3 = ['ENTER','Z','X','C','V','B','N','M','⌫'];
+---
+
+<Layout title={title} description={description}>
+  <!-- ══════════════════════════════════════════════════════════
+       Page header + controls bar
+  ══════════════════════════════════════════════════════════ -->
+  <div class="wg-root" id="wg-root">
+    <header class="wg-header">
+      <div class="wg-header-inner">
+        <a href="/#tools" class="wg-back-link" aria-label="Back to all tools">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Tools
+        </a>
+
+        <h1 class="wg-title">Word Game</h1>
+
+        <div class="wg-controls" role="toolbar" aria-label="Game controls">
+          <!-- Sound toggle -->
+          <button id="wg-sound-btn" type="button" class="wg-icon-btn" aria-pressed="false" aria-label="Turn sound on" title="Sound is off">
+            <span id="wg-sound-icon" aria-hidden="true">🔇</span>
+          </button>
+          <!-- Vibrate toggle -->
+          <button id="wg-vibrate-btn" type="button" class="wg-icon-btn" aria-pressed="false" aria-label="Turn vibration on" title="Vibration is off">
+            <span id="wg-vibrate-icon" aria-hidden="true">📳</span>
+          </button>
+          <!-- Dark mode toggle -->
+          <button id="wg-dark-btn" type="button" class="wg-icon-btn" aria-pressed="false" aria-label="Switch to dark mode" title="Light mode">
+            <span id="wg-dark-icon" aria-hidden="true">🌙</span>
+          </button>
+          <!-- Stats panel toggle -->
+          <button id="wg-stats-btn" type="button" class="wg-icon-btn" aria-label="Show stats" title="Stats">
+            <span aria-hidden="true">📊</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Toast notification -->
+      <div id="wg-toast" class="wg-toast" role="status" aria-live="polite" aria-atomic="true"></div>
+    </header>
+
+    <!-- ══════════════════════════════════════════════════════════
+         Game board — 6 rows × 5 tiles
+    ══════════════════════════════════════════════════════════ -->
+    <main class="wg-main">
+      <div class="wg-board" id="wg-board" aria-label="Word game board">
+        {Array.from({ length: MAX_GUESSES }, (_, row) => (
+          <div class="wg-row" id={`wg-row-${row}`} role="group" aria-label={`Guess ${row + 1}`}>
+            {Array.from({ length: WORD_LENGTH }, (_, col) => (
+              <div
+                class="wg-tile"
+                id={`wg-tile-${row}-${col}`}
+                data-state="empty"
+                aria-hidden="true"
+              ></div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           On-screen keyboard
+      ══════════════════════════════════════════════════════════ -->
+      <div class="wg-keyboard" id="wg-keyboard" role="group" aria-label="On-screen keyboard">
+        <div class="wg-kb-row">
+          {KB_ROW1.map(key => (
+            <button
+              type="button"
+              class="wg-key"
+              data-key={key}
+              id={`wg-key-${key}`}
+              aria-label={key}
+            >{key}</button>
+          ))}
+        </div>
+        <div class="wg-kb-row">
+          {KB_ROW2.map(key => (
+            <button
+              type="button"
+              class="wg-key"
+              data-key={key}
+              id={`wg-key-${key}`}
+              aria-label={key}
+            >{key}</button>
+          ))}
+        </div>
+        <div class="wg-kb-row">
+          {KB_ROW3.map(key => (
+            <button
+              type="button"
+              class={`wg-key${key === 'ENTER' || key === '⌫' ? ' wg-key-wide' : ''}`}
+              data-key={key}
+              id={`wg-key-${key === '⌫' ? 'BACKSPACE' : key}`}
+              aria-label={key === '⌫' ? 'Backspace' : key}
+            >{key}</button>
+          ))}
+        </div>
+      </div>
+    </main>
+
+    <!-- ══════════════════════════════════════════════════════════
+         Stats panel (shown on win/lose and via stats button)
+    ══════════════════════════════════════════════════════════ -->
+    <div id="wg-stats-panel" class="wg-modal wg-modal--hidden" role="dialog" aria-modal="true" aria-labelledby="wg-stats-title">
+      <div class="wg-modal-backdrop" id="wg-stats-backdrop"></div>
+      <div class="wg-modal-box">
+        <button type="button" class="wg-modal-close" id="wg-stats-close" aria-label="Close stats">✕</button>
+
+        <!-- Result message (only shown after game ends) -->
+        <div id="wg-result-msg" class="wg-result-msg wg-result-msg--hidden"></div>
+
+        <h2 id="wg-stats-title" class="wg-stats-title">Statistics</h2>
+
+        <div class="wg-stats-grid">
+          <div class="wg-stat">
+            <span class="wg-stat-num" id="stat-played">0</span>
+            <span class="wg-stat-label">Played</span>
+          </div>
+          <div class="wg-stat">
+            <span class="wg-stat-num" id="stat-winrate">0</span>
+            <span class="wg-stat-label">Win %</span>
+          </div>
+          <div class="wg-stat">
+            <span class="wg-stat-num" id="stat-streak">0</span>
+            <span class="wg-stat-label">Streak</span>
+          </div>
+          <div class="wg-stat">
+            <span class="wg-stat-num" id="stat-best">0</span>
+            <span class="wg-stat-label">Best</span>
+          </div>
+          <div class="wg-stat">
+            <span class="wg-stat-num" id="stat-avg">—</span>
+            <span class="wg-stat-label">Avg Guesses</span>
+          </div>
+        </div>
+
+        <h3 class="wg-dist-title">Guess Distribution</h3>
+        <div class="wg-dist" id="wg-dist">
+          {Array.from({ length: MAX_GUESSES }, (_, i) => (
+            <div class="wg-dist-row">
+              <span class="wg-dist-label">{i + 1}</span>
+              <div class="wg-dist-bar-wrap">
+                <div class="wg-dist-bar" id={`dist-bar-${i + 1}`} style="width:0%">
+                  <span class="wg-dist-count" id={`dist-count-${i + 1}`}>0</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     Styles — scoped to .wg-root
+════════════════════════════════════════════════════════════════════ -->
+<style>
+  /* ── CSS variables (light mode) ── */
+  .wg-root {
+    --wg-bg: #f3f6fc;
+    --wg-surface: #ffffff;
+    --wg-border: #dfe5f0;
+    --wg-text: #17233f;
+    --wg-text-soft: #56627a;
+    --wg-brand: #aebeff;
+    --wg-brand-deep: #7e93eb;
+
+    --tile-empty-bg: #ffffff;
+    --tile-tbd-bg: #ffffff;
+    --tile-tbd-border: #17233f;
+    --tile-green-bg: #4caf82;
+    --tile-green-text: #ffffff;
+    --tile-yellow-bg: #c9a227;
+    --tile-yellow-text: #ffffff;
+    --tile-gray-bg: #8a9ab5;
+    --tile-gray-text: #ffffff;
+
+    --key-bg: #dfe5f0;
+    --key-text: #17233f;
+    --key-green-bg: #4caf82;
+    --key-green-text: #ffffff;
+    --key-yellow-bg: #c9a227;
+    --key-yellow-text: #ffffff;
+    --key-gray-bg: #8a9ab5;
+    --key-gray-text: #ffffff;
+
+    --tile-size: clamp(46px, 11.5vw, 64px);
+    --tile-gap: clamp(4px, 1vw, 6px);
+
+    background: var(--wg-bg);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+  }
+
+  /* ── Dark mode ── */
+  .wg-root.dark {
+    --wg-bg: #111827;
+    --wg-surface: #1f2937;
+    --wg-border: #374151;
+    --wg-text: #f9fafb;
+    --wg-text-soft: #9ca3af;
+    --wg-brand: #6366f1;
+    --wg-brand-deep: #818cf8;
+
+    --tile-empty-bg: #1f2937;
+    --tile-tbd-bg: #1f2937;
+    --tile-tbd-border: #f9fafb;
+    --key-bg: #374151;
+    --key-text: #f9fafb;
+  }
+
+  /* ── Header ── */
+  .wg-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--wg-surface);
+    border-bottom: 1px solid var(--wg-border);
+  }
+
+  .wg-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 16px;
+    height: 52px;
+    gap: 8px;
+  }
+
+  .wg-back-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--wg-brand-deep);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .wg-back-link:hover { color: var(--wg-text); }
+
+  .wg-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--wg-text);
+    letter-spacing: -0.02em;
+    text-align: center;
+    flex: 1;
+    white-space: nowrap;
+    font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', sans-serif;
+  }
+
+  .wg-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .wg-icon-btn {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: background 0.15s;
+    color: var(--wg-text);
+  }
+  .wg-icon-btn:hover { background: var(--wg-border); }
+
+  /* ── Toast ── */
+  .wg-toast {
+    position: absolute;
+    top: 52px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background: var(--wg-text);
+    color: var(--wg-surface);
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 999px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 100;
+  }
+  .wg-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── Main layout ── */
+  .wg-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 8px 12px;
+    gap: 24px;
+  }
+
+  /* ── Board ── */
+  .wg-board {
+    display: flex;
+    flex-direction: column;
+    gap: var(--tile-gap);
+  }
+
+  .wg-row {
+    display: flex;
+    gap: var(--tile-gap);
+  }
+
+  /* ── Tiles ── */
+  .wg-tile {
+    width: var(--tile-size);
+    height: var(--tile-size);
+    border: 2px solid var(--wg-border);
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    font-size: clamp(1.2rem, 3vw, 1.6rem);
+    font-weight: 800;
+    font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', sans-serif;
+    color: var(--wg-text);
+    background: var(--tile-empty-bg);
+    transition: border-color 0.1s;
+    user-select: none;
+    position: relative;
+  }
+
+  .wg-tile[data-state="tbd"] {
+    border-color: var(--tile-tbd-border);
+    background: var(--tile-tbd-bg);
+    animation: wgTilePop 80ms ease-out;
+  }
+
+  /* Revealed states (applied after flip completes) */
+  .wg-tile[data-state="green"] {
+    background: var(--tile-green-bg);
+    border-color: var(--tile-green-bg);
+    color: var(--tile-green-text);
+  }
+  .wg-tile[data-state="yellow"] {
+    background: var(--tile-yellow-bg);
+    border-color: var(--tile-yellow-bg);
+    color: var(--tile-yellow-text);
+  }
+  .wg-tile[data-state="gray"] {
+    background: var(--tile-gray-bg);
+    border-color: var(--tile-gray-bg);
+    color: var(--tile-gray-text);
+  }
+
+  /* ── Keyboard ── */
+  .wg-keyboard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(5px, 1.2vw, 8px);
+    width: 100%;
+    max-width: 500px;
+    padding: 0 4px;
+  }
+
+  .wg-kb-row {
+    display: flex;
+    gap: clamp(4px, 1vw, 6px);
+    justify-content: center;
+  }
+
+  .wg-key {
+    height: clamp(44px, 9vw, 58px);
+    min-width: clamp(28px, 7.2vw, 43px);
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: var(--key-bg);
+    color: var(--key-text);
+    font-size: clamp(0.7rem, 2vw, 0.9rem);
+    font-weight: 700;
+    font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, transform 0.08s;
+    display: grid;
+    place-items: center;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wg-key:active { transform: scale(0.93); }
+
+  .wg-key-wide {
+    min-width: clamp(48px, 11vw, 65px);
+    font-size: clamp(0.6rem, 1.6vw, 0.75rem);
+  }
+
+  .wg-key[data-state="green"] {
+    background: var(--key-green-bg);
+    color: var(--key-green-text);
+  }
+  .wg-key[data-state="yellow"] {
+    background: var(--key-yellow-bg);
+    color: var(--key-yellow-text);
+  }
+  .wg-key[data-state="gray"] {
+    background: var(--key-gray-bg);
+    color: var(--key-gray-text);
+  }
+
+  /* ── Modal (stats panel) ── */
+  .wg-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .wg-modal--hidden { display: none; }
+
+  .wg-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.6);
+    backdrop-filter: blur(2px);
+  }
+
+  .wg-modal-box {
+    position: relative;
+    z-index: 1;
+    background: var(--wg-surface);
+    color: var(--wg-text);
+    border-radius: 20px;
+    padding: 28px 24px;
+    max-width: 360px;
+    width: 100%;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+    animation: wgModalIn 250ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .wg-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    color: var(--wg-text-soft);
+    line-height: 1;
+    padding: 6px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .wg-modal-close:hover { background: var(--wg-border); }
+
+  /* Result message at top of stats */
+  .wg-result-msg {
+    text-align: center;
+    font-weight: 800;
+    font-size: 1rem;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: 12px;
+  }
+  .wg-result-msg--hidden { display: none; }
+  .wg-result-msg.won {
+    background: rgba(76, 175, 130, 0.15);
+    color: #3a9168;
+  }
+  .wg-result-msg.lost {
+    background: rgba(138, 154, 181, 0.15);
+    color: var(--wg-text-soft);
+  }
+  .wg-root.dark .wg-result-msg.won { color: #6ee7b7; }
+  .wg-root.dark .wg-result-msg.lost { color: #9ca3af; }
+
+  .wg-stats-title {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--wg-text-soft);
+    margin-bottom: 16px;
+  }
+
+  .wg-stats-grid {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .wg-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 48px;
+  }
+
+  .wg-stat-num {
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--wg-text);
+  }
+
+  .wg-stat-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--wg-text-soft);
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  .wg-dist-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--wg-text-soft);
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  .wg-dist {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .wg-dist-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .wg-dist-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--wg-text);
+    width: 12px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .wg-dist-bar-wrap {
+    flex: 1;
+    background: var(--wg-border);
+    border-radius: 4px;
+    height: 24px;
+    overflow: hidden;
+  }
+
+  .wg-dist-bar {
+    height: 100%;
+    background: var(--wg-brand-deep);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 6px;
+    min-width: 24px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .wg-dist-bar.highlighted {
+    background: var(--tile-green-bg);
+  }
+
+  .wg-dist-count {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  /* ── Animations ── */
+  @keyframes wgTilePop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes wgTileFlipOut {
+    0% { transform: rotateX(0deg); }
+    100% { transform: rotateX(-90deg); }
+  }
+
+  @keyframes wgTileFlipIn {
+    0% { transform: rotateX(90deg); }
+    100% { transform: rotateX(0deg); }
+  }
+
+  @keyframes wgRowShake {
+    0%   { transform: translateX(0); }
+    15%  { transform: translateX(-6px); }
+    30%  { transform: translateX(6px); }
+    45%  { transform: translateX(-4px); }
+    60%  { transform: translateX(4px); }
+    75%  { transform: translateX(-2px); }
+    90%  { transform: translateX(2px); }
+    100% { transform: translateX(0); }
+  }
+
+  @keyframes wgTileBounce {
+    0%   { transform: translateY(0); }
+    40%  { transform: translateY(-18px); }
+    60%  { transform: translateY(0); }
+    75%  { transform: translateY(-9px); }
+    90%  { transform: translateY(0); }
+    100% { transform: translateY(0); }
+  }
+
+  @keyframes wgModalIn {
+    from { opacity: 0; transform: scale(0.93) translateY(10px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .wg-row.shake {
+    animation: wgRowShake 500ms ease-in-out;
+  }
+
+  .wg-tile.flip-out {
+    animation: wgTileFlipOut 150ms ease-in forwards;
+  }
+
+  .wg-tile.flip-in {
+    animation: wgTileFlipIn 150ms ease-out forwards;
+  }
+
+  .wg-tile.bounce {
+    animation: wgTileBounce 500ms ease-out;
+  }
+
+  /* ── Reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    .wg-tile, .wg-row { animation: none !important; }
+    .wg-tile.flip-out, .wg-tile.flip-in { animation: none !important; }
+    .wg-modal-box { animation: none !important; }
+    .wg-dist-bar { transition: none !important; }
+  }
+</style>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     Client-side game logic
+════════════════════════════════════════════════════════════════════ -->
+<script>
+import {
+  scoreGuess,
+  loadStats, saveStats,
+  loadTodayState, saveTodayState,
+  computeNewStreak,
+  adjustStreakForMissedDays,
+  winRate, avgGuesses,
+  SOUND_KEY, VIBRATE_KEY, DARK_KEY,
+} from '../../lib/wordgame.ts';
+import { getDailyWord, getDailyDateKey, VALID_WORDS } from '../../lib/words.ts';
+import { createSoundKit, burstConfetti } from '../../lib/effects.ts';
+
+/* ── Constants ── */
+const WORD_LENGTH = 5;
+const MAX_GUESSES = 6;
+const FLIP_DELAY_PER_TILE = 80;   // ms between each tile flipping
+const FLIP_DURATION       = 150;  // ms per tile half-flip
+const REVEAL_DONE_DELAY   = (WORD_LENGTH - 1) * FLIP_DELAY_PER_TILE + FLIP_DURATION * 2 + 80;
+
+/* ── DOM refs ── */
+const root          = document.getElementById('wg-root')!;
+const board         = document.getElementById('wg-board')!;
+const keyboard      = document.getElementById('wg-keyboard')!;
+const toast         = document.getElementById('wg-toast')!;
+const statsPanel    = document.getElementById('wg-stats-panel')!;
+const statsBackdrop = document.getElementById('wg-stats-backdrop')!;
+const statsClose    = document.getElementById('wg-stats-close')!;
+const statsBtn      = document.getElementById('wg-stats-btn')!;
+const resultMsg     = document.getElementById('wg-result-msg')!;
+const soundBtn      = document.getElementById('wg-sound-btn')!;
+const soundIcon     = document.getElementById('wg-sound-icon')!;
+const vibrateBtn    = document.getElementById('wg-vibrate-btn')!;
+const vibrateIcon   = document.getElementById('wg-vibrate-icon')!;
+const darkBtn       = document.getElementById('wg-dark-btn')!;
+const darkIcon      = document.getElementById('wg-dark-icon')!;
+
+/* ── Game state ── */
+const dateKey = getDailyDateKey();
+const answer  = getDailyWord();   // uppercase 5-letter string
+
+let guesses: Array<Array<{ letter: string; state: string }>> = [];
+let currentInput = '';
+let gameState: 'playing' | 'won' | 'lost' = 'playing';
+let keyStates: Record<string, string> = {};
+let isAnimating = false;
+
+/* ── Sound ── */
+const sound = createSoundKit();
+let soundMuted = true;
+function applySoundPref(muted: boolean) {
+  soundMuted = muted;
+  sound.setMuted(muted);
+  soundIcon.textContent = muted ? '🔇' : '🔊';
+  soundBtn.setAttribute('aria-pressed', String(!muted));
+  soundBtn.setAttribute('aria-label', muted ? 'Turn sound on' : 'Turn sound off');
+  soundBtn.title = muted ? 'Sound is off' : 'Sound is on';
+}
+try { soundMuted = localStorage.getItem(SOUND_KEY) !== 'on'; } catch {}
+applySoundPref(soundMuted);
+
+soundBtn.addEventListener('click', () => {
+  soundMuted = !soundMuted;
+  applySoundPref(soundMuted);
+  if (!soundMuted) { sound.unlock(); sound.chime(); }
+  try { localStorage.setItem(SOUND_KEY, soundMuted ? 'off' : 'on'); } catch {}
+});
+
+/* ── Vibration ── */
+let vibrateOn = false;
+function applyVibratePref(on: boolean) {
+  vibrateOn = on;
+  vibrateIcon.textContent = on ? '📳' : '📴';
+  vibrateBtn.setAttribute('aria-pressed', String(on));
+  vibrateBtn.setAttribute('aria-label', on ? 'Turn vibration off' : 'Turn vibration on');
+  vibrateBtn.title = on ? 'Vibration is on' : 'Vibration is off';
+}
+try { vibrateOn = localStorage.getItem(VIBRATE_KEY) === 'on'; } catch {}
+applyVibratePref(vibrateOn);
+
+vibrateBtn.addEventListener('click', () => {
+  vibrateOn = !vibrateOn;
+  applyVibratePref(vibrateOn);
+  if (vibrateOn) buzzVibrate([30]);
+  try { localStorage.setItem(VIBRATE_KEY, vibrateOn ? 'on' : 'off'); } catch {}
+});
+
+function buzzVibrate(pattern: number[]) {
+  if (vibrateOn && typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate(pattern);
+  }
+}
+
+/* ── Dark mode ── */
+let darkMode = false;
+function applyDarkPref(dark: boolean) {
+  darkMode = dark;
+  root.classList.toggle('dark', dark);
+  darkIcon.textContent = dark ? '☀️' : '🌙';
+  darkBtn.setAttribute('aria-pressed', String(dark));
+  darkBtn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+  darkBtn.title = dark ? 'Dark mode' : 'Light mode';
+}
+try { darkMode = localStorage.getItem(DARK_KEY) === 'dark'; } catch {}
+applyDarkPref(darkMode);
+
+darkBtn.addEventListener('click', () => {
+  darkMode = !darkMode;
+  applyDarkPref(darkMode);
+  try { localStorage.setItem(DARK_KEY, darkMode ? 'dark' : 'light'); } catch {}
+});
+
+/* ── Stats panel ── */
+function openStats() {
+  renderStats();
+  statsPanel.classList.remove('wg-modal--hidden');
+  statsClose.focus();
+}
+function closeStats() {
+  statsPanel.classList.add('wg-modal--hidden');
+}
+statsBtn.addEventListener('click', openStats);
+statsClose.addEventListener('click', closeStats);
+statsBackdrop.addEventListener('click', closeStats);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeStats();
+});
+
+/* ── Render helpers ── */
+function getTile(row: number, col: number): HTMLElement {
+  return document.getElementById(`wg-tile-${row}-${col}`)!;
+}
+function getRow(row: number): HTMLElement {
+  return document.getElementById(`wg-row-${row}`)!;
+}
+function getKey(letter: string): HTMLElement | null {
+  const id = letter === '⌫' ? 'wg-key-BACKSPACE' : `wg-key-${letter}`;
+  return document.getElementById(id);
+}
+
+function setTile(row: number, col: number, letter: string, state: string) {
+  const el = getTile(row, col);
+  el.textContent = letter || '';
+  el.dataset.state = state;
+}
+
+function paintCurrentRow() {
+  for (let c = 0; c < WORD_LENGTH; c++) {
+    const letter = currentInput[c] ?? '';
+    setTile(guesses.length, c, letter, letter ? 'tbd' : 'empty');
+  }
+}
+
+function restoreBoard() {
+  // Re-render all already-submitted guesses (instant, no animation)
+  for (let r = 0; r < guesses.length; r++) {
+    for (let c = 0; c < WORD_LENGTH; c++) {
+      const g = guesses[r][c];
+      setTile(r, c, g.letter, g.state);
+    }
+    // Update keyboard colours from this row
+    for (const g of guesses[r]) {
+      updateKeyState(g.letter, g.state);
+    }
+  }
+  // Re-render current input (if game still playing)
+  if (gameState === 'playing') paintCurrentRow();
+  renderKeys();
+}
+
+function renderKeys() {
+  for (const [letter, state] of Object.entries(keyStates)) {
+    const el = getKey(letter);
+    if (el) el.dataset.state = state;
+  }
+}
+
+/**
+ * Only upgrade key state — green beats yellow beats gray.
+ * Never downgrade a green key to yellow or gray.
+ */
+const STATE_PRIORITY: Record<string, number> = { gray: 1, yellow: 2, green: 3 };
+function updateKeyState(letter: string, state: string) {
+  const cur = keyStates[letter];
+  if (!cur || (STATE_PRIORITY[state] ?? 0) > (STATE_PRIORITY[cur] ?? 0)) {
+    keyStates[letter] = state;
+  }
+}
+
+/* ── Reveal animation ── */
+function revealRow(row: number, results: Array<{ letter: string; state: string }>): Promise<void> {
+  return new Promise((resolve) => {
+    for (let c = 0; c < WORD_LENGTH; c++) {
+      const tile = getTile(row, c);
+      const delay = c * FLIP_DELAY_PER_TILE;
+
+      setTimeout(() => {
+        // Flip out
+        tile.classList.add('flip-out');
+        tile.addEventListener('animationend', function onFlipOut() {
+          tile.removeEventListener('animationend', onFlipOut);
+          tile.classList.remove('flip-out');
+          // Apply colour at the midpoint (tile is face-down)
+          tile.dataset.state = results[c].state;
+          // Flip in
+          tile.classList.add('flip-in');
+          tile.addEventListener('animationend', function onFlipIn() {
+            tile.removeEventListener('animationend', onFlipIn);
+            tile.classList.remove('flip-in');
+            if (c === WORD_LENGTH - 1) resolve();
+          }, { once: true });
+        }, { once: true });
+      }, delay);
+    }
+  });
+}
+
+function shakeRow(row: number) {
+  const el = getRow(row);
+  el.classList.remove('shake');
+  void el.offsetWidth; // reflow
+  el.classList.add('shake');
+  el.addEventListener('animationend', () => el.classList.remove('shake'), { once: true });
+}
+
+function bounceRow(row: number) {
+  for (let c = 0; c < WORD_LENGTH; c++) {
+    const tile = getTile(row, c);
+    setTimeout(() => {
+      tile.classList.add('bounce');
+      tile.addEventListener('animationend', () => tile.classList.remove('bounce'), { once: true });
+    }, c * 80);
+  }
+}
+
+/* ── Toast ── */
+let toastTimer: ReturnType<typeof setTimeout>;
+function showToast(msg: string, duration = 1800) {
+  toast.textContent = msg;
+  toast.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('visible'), duration);
+}
+
+/* ── Persistence ── */
+function persistState() {
+  saveTodayState({ dateKey, guesses, currentInput, gameState });
+}
+
+/* ── Stats rendering ── */
+function renderStats(highlightRow?: number) {
+  let stats = loadStats();
+  stats = adjustStreakForMissedDays(stats, dateKey);
+
+  (document.getElementById('stat-played')!).textContent = String(stats.played);
+  (document.getElementById('stat-winrate')!).textContent = String(winRate(stats));
+  (document.getElementById('stat-streak')!).textContent = String(stats.currentStreak);
+  (document.getElementById('stat-best')!).textContent = String(stats.bestStreak);
+  (document.getElementById('stat-avg')!).textContent =
+    stats.wins === 0 ? '—' : String(avgGuesses(stats));
+
+  const maxCount = Math.max(1, ...stats.distribution);
+  for (let i = 1; i <= MAX_GUESSES; i++) {
+    const bar = document.getElementById(`dist-bar-${i}`)!;
+    const count = document.getElementById(`dist-count-${i}`)!;
+    const val = stats.distribution[i - 1];
+    const pct = Math.max(val > 0 ? 8 : 0, Math.round((val / maxCount) * 100));
+    bar.style.width = `${pct}%`;
+    count.textContent = String(val);
+    bar.classList.toggle('highlighted', highlightRow === i);
+  }
+}
+
+/* ── Win/loss handling ── */
+function handleWin(guessCount: number) {
+  gameState = 'won';
+  persistState();
+
+  let stats = loadStats();
+  stats = adjustStreakForMissedDays(stats, dateKey);
+  stats.played++;
+  stats.wins++;
+  stats.totalWinGuesses += guessCount;
+  stats.distribution[guessCount - 1]++;
+
+  const { currentStreak, bestStreak } = computeNewStreak(stats, dateKey, true);
+  stats.currentStreak = currentStreak;
+  stats.bestStreak = bestStreak;
+  stats.history[dateKey] = { won: true, guesses: guessCount };
+  saveStats(stats);
+
+  bounceRow(guessCount - 1);
+  buzzVibrate([60, 30, 60, 30, 120]);
+  if (!soundMuted) {
+    sound.unlock();
+    sound.chime();
+  }
+
+  setTimeout(() => {
+    const msgs = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
+    const msg = msgs[Math.min(guessCount - 1, msgs.length - 1)];
+    resultMsg.textContent = `${msg} Solved in ${guessCount}/${MAX_GUESSES} guess${guessCount === 1 ? '' : 'es'}.`;
+    resultMsg.className = 'wg-result-msg won';
+    openStats();
+    burstConfetti(board);
+  }, REVEAL_DONE_DELAY + 400);
+}
+
+function handleLoss() {
+  gameState = 'lost';
+  persistState();
+
+  let stats = loadStats();
+  stats = adjustStreakForMissedDays(stats, dateKey);
+  stats.played++;
+  const { currentStreak, bestStreak } = computeNewStreak(stats, dateKey, false);
+  stats.currentStreak = currentStreak;
+  stats.bestStreak = bestStreak;
+  stats.history[dateKey] = { won: false, guesses: MAX_GUESSES };
+  saveStats(stats);
+
+  buzzVibrate([200]);
+
+  setTimeout(() => {
+    resultMsg.textContent = `The word was ${answer}. Better luck tomorrow!`;
+    resultMsg.className = 'wg-result-msg lost';
+    openStats();
+  }, REVEAL_DONE_DELAY + 300);
+}
+
+/* ── Input handling ── */
+function handleLetter(letter: string) {
+  if (gameState !== 'playing' || isAnimating) return;
+  if (currentInput.length >= WORD_LENGTH) return;
+  currentInput += letter;
+  sound.tick();
+  paintCurrentRow();
+}
+
+function handleBackspace() {
+  if (gameState !== 'playing' || isAnimating) return;
+  if (currentInput.length === 0) return;
+  currentInput = currentInput.slice(0, -1);
+  paintCurrentRow();
+  persistState();
+}
+
+async function handleEnter() {
+  if (gameState !== 'playing' || isAnimating) return;
+
+  if (currentInput.length < WORD_LENGTH) {
+    showToast('Not enough letters');
+    shakeRow(guesses.length);
+    buzzVibrate([80]);
+    return;
+  }
+
+  if (!VALID_WORDS.has(currentInput)) {
+    showToast('Not in word list');
+    shakeRow(guesses.length);
+    buzzVibrate([80]);
+    return;
+  }
+
+  // Score the guess
+  const results = scoreGuess(currentInput, answer);
+  const row = guesses.length;
+  guesses.push(results);
+  currentInput = '';
+
+  // Update key states (before animation so there's no lag on keyboard)
+  for (const r of results) {
+    updateKeyState(r.letter, r.state);
+  }
+  renderKeys();
+  persistState();
+
+  // Animate reveal
+  isAnimating = true;
+  await revealRow(row, results);
+  isAnimating = false;
+
+  const won = results.every((r) => r.state === 'green');
+  if (won) {
+    handleWin(guesses.length);
+  } else if (guesses.length === MAX_GUESSES) {
+    handleLoss();
+  } else {
+    paintCurrentRow();
+  }
+}
+
+/* ── Physical keyboard ── */
+document.addEventListener('keydown', (e: KeyboardEvent) => {
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
+  if (e.key === 'Enter') { e.preventDefault(); void handleEnter(); }
+  else if (e.key === 'Backspace') { e.preventDefault(); handleBackspace(); }
+  else if (/^[a-zA-Z]$/.test(e.key)) { handleLetter(e.key.toUpperCase()); }
+});
+
+/* ── On-screen keyboard ── */
+keyboard.addEventListener('click', (e: MouseEvent) => {
+  const target = (e.target as HTMLElement).closest('[data-key]') as HTMLElement | null;
+  if (!target) return;
+  const key = target.dataset.key!;
+  if (key === 'ENTER') void handleEnter();
+  else if (key === '⌫') handleBackspace();
+  else handleLetter(key);
+});
+
+/* ── Load / restore state on mount ── */
+(function init() {
+  const saved = loadTodayState();
+  let stats = loadStats();
+  stats = adjustStreakForMissedDays(stats, dateKey);
+
+  if (saved && saved.dateKey === dateKey) {
+    // Restore in-progress or completed game from today
+    guesses        = saved.guesses;
+    currentInput   = saved.currentInput ?? '';
+    gameState      = saved.gameState;
+    restoreBoard();
+
+    if (gameState !== 'playing') {
+      // Game already finished — show result immediately
+      const won = gameState === 'won';
+      resultMsg.textContent = won
+        ? `Solved in ${guesses.length}/${MAX_GUESSES} guess${guesses.length === 1 ? '' : 'es'}!`
+        : `The word was ${answer}. Better luck tomorrow!`;
+      resultMsg.className = `wg-result-msg ${won ? 'won' : 'lost'}`;
+      // Open stats panel after a small delay
+      setTimeout(() => openStats(), 300);
+    }
+  } else {
+    // Fresh game for today
+    guesses      = [];
+    currentInput = '';
+    gameState    = 'playing';
+    paintCurrentRow();
+  }
+
+  renderStats();
+})();
+</script>
