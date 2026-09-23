@@ -418,16 +418,16 @@ const description = 'Create a fair single-elimination bracket with random seedin
       });
     }
 
-    // Champion below final column
+    // Champion below final column — close gap
     const winner = champion(currentBracket);
     if (winner) {
       const championRow = document.createElement('div');
       championRow.style.gridColumn = '3';
-      championRow.style.gridRow = `${maxMatches + 2}`;
+      championRow.style.gridRow = `${maxMatches + 2}`; // immediately after last match row
       championRow.style.display = 'flex';
       championRow.style.justifyContent = 'center';
       championRow.style.alignItems = 'center';
-      championRow.style.padding = '1rem 0';
+      championRow.style.padding = '0.35rem 0 0';
       championRow.innerHTML = `
         <div class="export-champion" style="text-align:center;border:2px solid #e8c080;border-radius:1rem;background:linear-gradient(135deg,#fffdf5,#fdf5e6);padding:0.9rem 1.5rem;box-shadow:0 4px 14px rgba(180,132,20,0.08);">
           <div style="font-size:1.3rem;line-height:1;">🏆</div>
@@ -450,7 +450,63 @@ const description = 'Create a fair single-elimination bracket with random seedin
     document.body.appendChild(tempWrapper);
 
     try {
-      // Give layout time to settle
+      await new Promise((r) => setTimeout(r, 50));
+
+      // Measure card positions for connector drawing
+      const cards = Array.from(clone.querySelectorAll('.bracket-match')) as HTMLElement[];
+      const cardRects: { x: number; y: number; matchId: string }[] = [];
+      cards.forEach((card) => {
+        const rect = card.getBoundingClientRect();
+        const matchId = card.getAttribute('data-match-id');
+        cardRects.push({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, matchId: matchId || '' });
+      });
+
+      // Build connector SVG based on feedsTo data
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'connector-layer');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.style.position = 'absolute';
+      svg.style.inset = '0';
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+      svg.style.pointerEvents = 'none';
+      svg.style.zIndex = '0';
+      svg.style.overflow = 'visible';
+
+      const rect = clone.getBoundingClientRect();
+      const positionsMap = new Map<string, { x: number; y: number; w: number; h: number }>();
+      cards.forEach((card) => {
+        const r = card.getBoundingClientRect();
+        const id = card.getAttribute('data-match-id');
+        if (id) positionsMap.set(id, { x: r.left - rect.left, y: r.top - rect.top, w: r.width, h: r.height });
+      });
+
+      for (const col of columns) {
+        for (const match of col.matches) {
+          if (match.feedsTo && match.id && match.feedsTo.matchId) {
+            const start = positionsMap.get(match.id);
+            const end = positionsMap.get(match.feedsTo.matchId);
+            if (start && end) {
+              const sx = start.x + start.w / 2;
+              const sy = start.y + start.h / 2;
+              const ex = end.x + end.w / 2;
+              const ey = end.y + end.h / 2;
+              const mx = (sx + ex) / 2;
+              const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              const d = `M ${sx} ${sy} L ${mx} ${sy} L ${mx} ${ey} L ${ex} ${ey}`;
+              path.setAttribute('d', d);
+              path.setAttribute('stroke', '#b8c4db');
+              path.setAttribute('stroke-width', '2');
+              path.setAttribute('fill', 'none');
+              path.setAttribute('stroke-linecap', 'round');
+              path.setAttribute('stroke-linejoin', 'round');
+              svg.appendChild(path);
+            }
+          }
+        }
+      }
+      clone.appendChild(svg);
+
       await new Promise((r) => setTimeout(r, 50));
       const completeWidth = Math.max(1200, clone.scrollWidth);
       const completeHeight = Math.max(600, clone.scrollHeight);
@@ -640,13 +696,13 @@ const description = 'Create a fair single-elimination bracket with random seedin
     white-space: nowrap;
   }
 
-  /* ===== CHAMPION ===== */
+  /* ===== CHAMPION PANEL — CLOSE TO FINAL ===== */
   .champion-panel {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.65rem;
-    margin: 1rem auto 0;
+    margin: 0.25rem auto 0;
     max-width: fit-content;
     border: 1.5px solid #f0dca8;
     border-radius: 1.1rem;
