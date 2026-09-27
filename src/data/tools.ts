@@ -112,7 +112,17 @@ export const TOOLS: Record<string, Tool> = {
     description: 'Guess the daily 5-letter word in 6 tries.',
     category: 'play',
     icon: 'game',
-    related: ['diceRoller', 'tournamentDraw'],
+    related: ['ticTacToe', 'diceRoller'],
+  },
+  ticTacToe: {
+    id: 'ticTacToe',
+    name: 'Tic-Tac-Toe',
+    slug: 'play/tic-tac-toe',
+    url: '/play/tic-tac-toe/',
+    description: 'Classic X vs O — play a friend or challenge the AI.',
+    category: 'play',
+    icon: 'game',
+    related: ['wordGame', 'diceRoller'],
   },
 };
 
@@ -130,7 +140,7 @@ export const TOOL_CATEGORIES = {
   play: {
     name: 'PLAY & WIN',
     description: 'Randomize teams, brackets and dice rolls.',
-    tools: [TOOLS.randomTeamGenerator, TOOLS.tournamentDraw, TOOLS.diceRoller, TOOLS.wordGame],
+    tools: [TOOLS.randomTeamGenerator, TOOLS.tournamentDraw, TOOLS.diceRoller, TOOLS.wordGame, TOOLS.ticTacToe],
   },
 };
 

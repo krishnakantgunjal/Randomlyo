@@ -274,7 +274,18 @@ export function getLevelWord(level: number): string {
   const safeLevel = Math.max(1, Math.floor(level));
   const prime = DAILY_WORDS.length;
   const step = 367;
-  const index = (((safeLevel - 1) * step) % prime + prime) % prime;
+  let index = (((safeLevel - 1) * step) % prime + prime) % prime;
+
+  // Collision check against today's Daily Word
+  const now = new Date();
+  const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const epochDays = Math.floor(localMidnight.getTime() / 86_400_000);
+  const dailyIndex = ((epochDays % prime) + prime) % prime;
+
+  if (index === dailyIndex) {
+    index = (index + step) % prime;
+  }
+
   return DAILY_WORDS[index];
 }
 

@@ -1,0 +1,852 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const title = 'Tic-Tac-Toe — Play Against a Friend or AI | Randomlyo';
+const description = 'Classic Tic-Tac-Toe with Player vs Player and AI modes (Easy, Medium, Impossible). Customize symbols, track scores, and challenge the unbeatable AI.';
+---
+
+<Layout title={title} description={description}>
+<div class="ttt-root" id="ttt-root">
+
+  <!-- HEADER -->
+  <header class="ttt-header">
+    <div class="ttt-header-inner">
+      <a href="/#tools" class="ttt-back-link" aria-label="Back to all tools">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Tools
+      </a>
+      <h1 class="ttt-title">Tic-Tac-Toe</h1>
+      <div class="ttt-controls" role="toolbar" aria-label="Game controls">
+        <button id="ttt-sound-btn" type="button" class="ttt-icon-btn" aria-pressed="false" aria-label="Turn sound on" title="Sound is off">
+          <span id="ttt-sound-icon" aria-hidden="true">🔇</span>
+        </button>
+        <button id="ttt-dark-btn" type="button" class="ttt-icon-btn" aria-pressed="false" aria-label="Switch to dark mode" title="Light mode">
+          <span id="ttt-dark-icon" aria-hidden="true">🌙</span>
+        </button>
+        <button id="ttt-customize-btn" type="button" class="ttt-icon-btn" aria-label="Customize symbols and theme" title="Customize">
+          <span aria-hidden="true">🎨</span>
+        </button>
+        <button id="ttt-stats-btn" type="button" class="ttt-icon-btn" aria-label="Show score" title="Scores">
+          <span aria-hidden="true">📊</span>
+        </button>
+      </div>
+    </div>
+    <div id="ttt-toast" class="ttt-toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  </header>
+
+  <main class="ttt-main">
+
+    <!-- MODE SELECTION -->
+    <div class="ttt-screen" id="ttt-screen-mode">
+      <div class="ttt-mode-card">
+        <p class="ttt-eyebrow">Choose Mode</p>
+        <h2 class="ttt-mode-heading">How do you want to play?</h2>
+        <div class="ttt-mode-options">
+          <button class="ttt-mode-btn" id="btn-pvp" type="button">
+            <span class="ttt-mode-btn-icon">👥</span>
+            <span>
+              <span class="ttt-mode-btn-label">Player vs Player</span>
+              <span class="ttt-mode-btn-sub">Two players, one device</span>
+            </span>
+          </button>
+          <button class="ttt-mode-btn" id="btn-pvai" type="button">
+            <span class="ttt-mode-btn-icon">🤖</span>
+            <span>
+              <span class="ttt-mode-btn-label">Player vs AI</span>
+              <span class="ttt-mode-btn-sub">Choose your difficulty</span>
+            </span>
+          </button>
+        </div>
+        <div class="ttt-quick-match-wrap">
+          <button class="ttt-quick-match-btn" id="btn-quick-match" type="button">
+            <span aria-hidden="true">&#9889;</span> Quick Match
+          </button>
+          <p class="ttt-quick-desc">Random AI difficulty — jump straight in</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIFFICULTY SELECTION -->
+    <div class="ttt-screen ttt-hidden" id="ttt-screen-difficulty">
+      <div class="ttt-mode-card">
+        <p class="ttt-eyebrow">AI Difficulty</p>
+        <h2 class="ttt-mode-heading">Pick your challenge</h2>
+        <div class="ttt-diff-options">
+          <button class="ttt-diff-btn" id="btn-easy" type="button" data-diff="easy">
+            <span class="ttt-diff-icon">🐣</span>
+            <span>
+              <div class="ttt-diff-name">Easy</div>
+              <div class="ttt-diff-desc">AI plays mostly random — great for beginners</div>
+            </span>
+          </button>
+          <button class="ttt-diff-btn" id="btn-medium" type="button" data-diff="medium">
+            <span class="ttt-diff-icon">🧠</span>
+            <span>
+              <div class="ttt-diff-name">Medium</div>
+              <div class="ttt-diff-desc">AI mixes smart moves with mistakes</div>
+            </span>
+          </button>
+          <button class="ttt-diff-btn" id="btn-impossible" type="button" data-diff="impossible">
+            <span class="ttt-diff-icon">💀</span>
+            <span>
+              <div class="ttt-diff-name">Impossible</div>
+              <div class="ttt-diff-desc">Perfect minimax — best you can do is a draw</div>
+            </span>
+          </button>
+        </div>
+        <button class="ttt-back-btn" id="btn-back-to-mode" type="button">← Back</button>
+      </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div class="ttt-screen ttt-hidden" id="ttt-screen-game">
+
+      <!-- Score bar -->
+      <div class="ttt-score-bar">
+        <div class="ttt-score-item" id="score-x-wrap">
+          <span class="ttt-score-symbol ttt-sx" id="score-x-symbol">X</span>
+          <span class="ttt-score-count" id="score-x">0</span>
+          <span class="ttt-score-label" id="score-x-label">Player X</span>
+        </div>
+        <div class="ttt-score-item ttt-score-draw">
+          <span class="ttt-score-count" id="score-d">0</span>
+          <span class="ttt-score-label">Draw</span>
+        </div>
+        <div class="ttt-score-item" id="score-o-wrap">
+          <span class="ttt-score-symbol ttt-so" id="score-o-symbol">O</span>
+          <span class="ttt-score-count" id="score-o">0</span>
+          <span class="ttt-score-label" id="score-o-label">Player O</span>
+        </div>
+      </div>
+
+      <!-- Turn indicator -->
+      <div class="ttt-turn-bar">
+        <div class="ttt-turn-indicator" id="ttt-turn-indicator">
+          <span class="ttt-turn-symbol" id="ttt-turn-symbol">X</span>
+          <span id="ttt-turn-text">Your turn</span>
+        </div>
+        <div class="ttt-mode-badge" id="ttt-mode-badge">PvP</div>
+      </div>
+
+      <!-- Board -->
+      <div class="ttt-board-wrap" id="ttt-board-wrap">
+        <div class="ttt-board" id="ttt-board" aria-label="Tic-Tac-Toe board" role="grid">
+          <button class="ttt-cell" id="cell-0" role="gridcell" aria-label="Cell 1, empty" data-index="0"></button>
+          <button class="ttt-cell" id="cell-1" role="gridcell" aria-label="Cell 2, empty" data-index="1"></button>
+          <button class="ttt-cell" id="cell-2" role="gridcell" aria-label="Cell 3, empty" data-index="2"></button>
+          <button class="ttt-cell" id="cell-3" role="gridcell" aria-label="Cell 4, empty" data-index="3"></button>
+          <button class="ttt-cell" id="cell-4" role="gridcell" aria-label="Cell 5, empty" data-index="4"></button>
+          <button class="ttt-cell" id="cell-5" role="gridcell" aria-label="Cell 6, empty" data-index="5"></button>
+          <button class="ttt-cell" id="cell-6" role="gridcell" aria-label="Cell 7, empty" data-index="6"></button>
+          <button class="ttt-cell" id="cell-7" role="gridcell" aria-label="Cell 8, empty" data-index="7"></button>
+          <button class="ttt-cell" id="cell-8" role="gridcell" aria-label="Cell 9, empty" data-index="8"></button>
+          <svg class="ttt-win-line" id="ttt-win-line" aria-hidden="true" viewBox="0 0 3 3" preserveAspectRatio="none">
+            <line id="ttt-win-line-el" x1="0" y1="0" x2="0" y2="0" stroke-width="0.18" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div class="ttt-result ttt-hidden" id="ttt-result" aria-live="assertive">
+        <div class="ttt-result-inner" id="ttt-result-inner">
+          <div class="ttt-result-symbol" id="ttt-result-symbol"></div>
+          <div class="ttt-result-msg" id="ttt-result-msg"></div>
+        </div>
+      </div>
+
+      <!-- Action bar -->
+      <div class="ttt-action-bar">
+        <button class="ttt-action-btn ttt-action-primary" id="btn-play-again" type="button">Play Again ↺</button>
+        <button class="ttt-action-btn ttt-action-secondary" id="btn-change-mode" type="button">Change Mode</button>
+        <button class="ttt-action-btn ttt-action-ghost" id="btn-reset-score" type="button">Reset Score</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- CUSTOMIZE MODAL -->
+<div class="ttt-modal-overlay ttt-hidden" id="ttt-customize-modal" role="dialog" aria-modal="true" aria-labelledby="customize-modal-title">
+  <div class="ttt-modal">
+    <div class="ttt-modal-header">
+      <h2 id="customize-modal-title">Customize</h2>
+      <button class="ttt-modal-close" id="btn-close-customize" type="button" aria-label="Close">&#10005;</button>
+    </div>
+    <div class="ttt-modal-body">
+      <div class="ttt-custom-section">
+        <label class="ttt-custom-label">X Symbol</label>
+        <div class="ttt-preset-row">
+          <button class="ttt-preset-btn" data-for="x" data-val="X" type="button">X</button>
+          <button class="ttt-preset-btn" data-for="x" data-val="🔥" type="button">🔥</button>
+          <button class="ttt-preset-btn" data-for="x" data-val="⚔️" type="button">⚔️</button>
+          <button class="ttt-preset-btn" data-for="x" data-val="🦊" type="button">🦊</button>
+          <button class="ttt-preset-btn" data-for="x" data-val="★" type="button">★</button>
+        </div>
+        <input class="ttt-custom-input" id="custom-x-input" type="text" maxlength="2" placeholder="or type custom…" aria-label="Custom X symbol"/>
+      </div>
+      <div class="ttt-custom-section">
+        <label class="ttt-custom-label">O Symbol</label>
+        <div class="ttt-preset-row">
+          <button class="ttt-preset-btn" data-for="o" data-val="O" type="button">O</button>
+          <button class="ttt-preset-btn" data-for="o" data-val="💧" type="button">💧</button>
+          <button class="ttt-preset-btn" data-for="o" data-val="🛡️" type="button">🛡️</button>
+          <button class="ttt-preset-btn" data-for="o" data-val="🐻" type="button">🐻</button>
+          <button class="ttt-preset-btn" data-for="o" data-val="◆" type="button">◆</button>
+        </div>
+        <input class="ttt-custom-input" id="custom-o-input" type="text" maxlength="2" placeholder="or type custom…" aria-label="Custom O symbol"/>
+      </div>
+      <div class="ttt-custom-section">
+        <label class="ttt-custom-label">Board Theme</label>
+        <div class="ttt-theme-row">
+          <button class="ttt-theme-btn" data-theme="default" type="button">
+            <span class="ttt-theme-swatch" style="background:#7e93eb;"></span>Classic
+          </button>
+          <button class="ttt-theme-btn" data-theme="ocean" type="button">
+            <span class="ttt-theme-swatch" style="background:linear-gradient(135deg,#38bdf8,#34d399);"></span>Ocean
+          </button>
+          <button class="ttt-theme-btn" data-theme="forest" type="button">
+            <span class="ttt-theme-swatch" style="background:linear-gradient(135deg,#4ade80,#fb923c);"></span>Forest
+          </button>
+          <button class="ttt-theme-btn" data-theme="candy" type="button">
+            <span class="ttt-theme-swatch" style="background:linear-gradient(135deg,#f472b6,#a78bfa);"></span>Candy
+          </button>
+          <button class="ttt-theme-btn" data-theme="dusk" type="button">
+            <span class="ttt-theme-swatch" style="background:linear-gradient(135deg,#fbbf24,#c084fc);"></span>Dusk
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="ttt-modal-footer">
+      <button class="ttt-modal-save" id="btn-save-customize" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATS MODAL -->
+<div class="ttt-modal-overlay ttt-hidden" id="ttt-stats-modal" role="dialog" aria-modal="true" aria-labelledby="stats-modal-title">
+  <div class="ttt-modal">
+    <div class="ttt-modal-header">
+      <h2 id="stats-modal-title">Session Scores</h2>
+      <button class="ttt-modal-close" id="btn-close-stats" type="button" aria-label="Close">&#10005;</button>
+    </div>
+    <div class="ttt-modal-body">
+      <div class="ttt-stats-grid">
+        <div class="ttt-stat-box">
+          <div class="ttt-stat-num" id="modal-x-wins">0</div>
+          <div class="ttt-stat-lbl" id="modal-x-label">X Wins</div>
+        </div>
+        <div class="ttt-stat-box">
+          <div class="ttt-stat-num" id="modal-draws">0</div>
+          <div class="ttt-stat-lbl">Draws</div>
+        </div>
+        <div class="ttt-stat-box">
+          <div class="ttt-stat-num" id="modal-o-wins">0</div>
+          <div class="ttt-stat-lbl" id="modal-o-label">O Wins</div>
+        </div>
+        <div class="ttt-stat-box ttt-stat-full">
+          <div class="ttt-stat-num" id="modal-total">0</div>
+          <div class="ttt-stat-lbl">Total Games</div>
+        </div>
+      </div>
+    </div>
+    <div class="ttt-modal-footer">
+      <button class="ttt-modal-save" id="btn-modal-reset" type="button">Reset Score</button>
+      <button class="ttt-modal-cancel" id="btn-close-stats-2" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<style>
+:root {
+  --ttt-bg: #f3f6fc;
+  --ttt-surface: #ffffff;
+  --ttt-border: #dfe5f0;
+  --ttt-ink: #17233f;
+  --ttt-ink-soft: #56627a;
+  --ttt-brand: #7e93eb;
+  --ttt-brand-light: #aebeff;
+  --ttt-x-color: #7e93eb;
+  --ttt-o-color: #f87171;
+  --ttt-win-line: #7e93eb;
+  --ttt-cell-bg: #ffffff;
+  --ttt-cell-hover: #f0f4ff;
+  --ttt-shadow: 0 2px 16px rgba(23,35,63,0.08);
+  --ttt-shadow-lg: 0 8px 40px rgba(23,35,63,0.14);
+}
+.ttt-dark {
+  --ttt-bg: #111827;
+  --ttt-surface: #1e2a3a;
+  --ttt-border: #2d3d52;
+  --ttt-ink: #e8edf8;
+  --ttt-ink-soft: #8a96ad;
+  --ttt-cell-bg: #243044;
+  --ttt-cell-hover: #2d3d52;
+  --ttt-shadow: 0 2px 16px rgba(0,0,0,0.3);
+  --ttt-shadow-lg: 0 8px 40px rgba(0,0,0,0.45);
+}
+.ttt-theme-ocean  { --ttt-x-color:#38bdf8; --ttt-o-color:#34d399; --ttt-win-line:#38bdf8; --ttt-brand:#38bdf8; }
+.ttt-theme-forest { --ttt-x-color:#4ade80; --ttt-o-color:#fb923c; --ttt-win-line:#4ade80; --ttt-brand:#4ade80; }
+.ttt-theme-candy  { --ttt-x-color:#f472b6; --ttt-o-color:#a78bfa; --ttt-win-line:#f472b6; --ttt-brand:#f472b6; }
+.ttt-theme-dusk   { --ttt-x-color:#fbbf24; --ttt-o-color:#c084fc; --ttt-win-line:#fbbf24; --ttt-brand:#fbbf24; }
+
+.ttt-root { min-height:calc(100vh - 4rem); background:var(--ttt-bg); display:flex; flex-direction:column; transition:background 0.25s; }
+
+.ttt-header { background:var(--ttt-surface); border-bottom:1px solid var(--ttt-border); position:sticky; top:0; z-index:20; transition:background 0.25s,border-color 0.25s; }
+.ttt-header-inner { max-width:600px; margin:0 auto; padding:0 1.25rem; height:3.5rem; display:flex; align-items:center; gap:0.75rem; }
+.ttt-back-link { display:flex; align-items:center; gap:0.3rem; font-size:0.8rem; font-weight:600; color:var(--ttt-ink-soft); text-decoration:none; transition:color 0.15s; flex-shrink:0; }
+.ttt-back-link:hover { color:var(--ttt-brand); }
+.ttt-title { font-size:1.05rem; font-weight:700; color:var(--ttt-ink); margin:0; flex:1; text-align:center; letter-spacing:-0.01em; }
+.ttt-controls { display:flex; gap:0.25rem; flex-shrink:0; }
+.ttt-icon-btn { width:2.25rem; height:2.25rem; border-radius:0.6rem; border:none; background:transparent; cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center; transition:background 0.15s; color:var(--ttt-ink); }
+.ttt-icon-btn:hover { background:var(--ttt-cell-hover); }
+
+.ttt-toast { position:fixed; top:4.5rem; left:50%; transform:translateX(-50%) translateY(-0.5rem); background:var(--ttt-ink); color:var(--ttt-surface); padding:0.5rem 1.25rem; border-radius:2rem; font-size:0.85rem; font-weight:600; opacity:0; pointer-events:none; z-index:100; transition:opacity 0.2s,transform 0.2s; white-space:nowrap; }
+.ttt-toast.ttt-toast-show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+.ttt-main { flex:1; display:flex; flex-direction:column; align-items:center; padding:1.5rem 1rem 3rem; }
+.ttt-screen { width:100%; max-width:520px; }
+.ttt-hidden { display:none !important; }
+
+.ttt-mode-card { background:var(--ttt-surface); border:1px solid var(--ttt-border); border-radius:1.5rem; padding:2rem 1.5rem; box-shadow:var(--ttt-shadow); display:flex; flex-direction:column; align-items:center; gap:1.25rem; transition:background 0.25s,border-color 0.25s; }
+.ttt-eyebrow { font-size:0.7rem; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:var(--ttt-brand); }
+.ttt-mode-heading { font-size:1.4rem; font-weight:700; color:var(--ttt-ink); margin:0; text-align:center; }
+.ttt-mode-options { display:flex; flex-direction:column; gap:0.75rem; width:100%; }
+.ttt-mode-btn { display:flex; align-items:center; gap:1rem; padding:1rem 1.25rem; background:var(--ttt-cell-bg); border:1.5px solid var(--ttt-border); border-radius:1rem; cursor:pointer; text-align:left; transition:border-color 0.15s,background 0.15s,transform 0.1s; color:var(--ttt-ink); width:100%; }
+.ttt-mode-btn:hover { border-color:var(--ttt-brand); background:var(--ttt-cell-hover); transform:translateY(-1px); }
+.ttt-mode-btn:active { transform:scale(0.98); }
+.ttt-mode-btn-icon { font-size:1.75rem; flex-shrink:0; }
+.ttt-mode-btn-label { font-weight:700; font-size:1rem; color:var(--ttt-ink); display:block; }
+.ttt-mode-btn-sub { font-size:0.8rem; color:var(--ttt-ink-soft); display:block; margin-top:0.1rem; }
+
+.ttt-quick-match-wrap { display:flex; flex-direction:column; align-items:center; gap:0.4rem; width:100%; }
+.ttt-quick-match-btn { width:100%; padding:0.85rem 1.25rem; background:linear-gradient(135deg,var(--ttt-brand),var(--ttt-brand-light)); border:none; border-radius:1rem; font-size:0.95rem; font-weight:700; color:#17233f; cursor:pointer; transition:opacity 0.15s,transform 0.1s; display:flex; align-items:center; justify-content:center; gap:0.5rem; }
+.ttt-quick-match-btn:hover { opacity:0.9; transform:translateY(-1px); }
+.ttt-quick-match-btn:active { transform:scale(0.98); }
+.ttt-quick-desc { font-size:0.75rem; color:var(--ttt-ink-soft); }
+
+.ttt-diff-options { display:flex; flex-direction:column; gap:0.75rem; width:100%; }
+.ttt-diff-btn { display:flex; align-items:center; gap:1rem; padding:1rem 1.25rem; background:var(--ttt-cell-bg); border:1.5px solid var(--ttt-border); border-radius:1rem; cursor:pointer; text-align:left; transition:border-color 0.15s,background 0.15s,transform 0.1s; color:var(--ttt-ink); width:100%; }
+.ttt-diff-btn:hover { border-color:var(--ttt-brand); background:var(--ttt-cell-hover); transform:translateY(-1px); }
+.ttt-diff-btn:active { transform:scale(0.98); }
+.ttt-diff-icon { font-size:1.75rem; flex-shrink:0; }
+.ttt-diff-name { font-weight:700; font-size:1rem; color:var(--ttt-ink); }
+.ttt-diff-desc { font-size:0.8rem; color:var(--ttt-ink-soft); margin-top:0.1rem; }
+.ttt-back-btn { background:none; border:none; color:var(--ttt-ink-soft); font-size:0.85rem; font-weight:600; cursor:pointer; padding:0.5rem; transition:color 0.15s; align-self:flex-start; }
+.ttt-back-btn:hover { color:var(--ttt-brand); }
+
+.ttt-score-bar { display:flex; align-items:center; justify-content:center; background:var(--ttt-surface); border:1px solid var(--ttt-border); border-radius:1rem; padding:0.75rem 1.5rem; margin-bottom:1rem; box-shadow:var(--ttt-shadow); width:100%; transition:background 0.25s,border-color 0.25s; }
+.ttt-score-item { display:flex; flex-direction:column; align-items:center; flex:1; gap:0.15rem; }
+.ttt-score-draw { border-left:1px solid var(--ttt-border); border-right:1px solid var(--ttt-border); }
+.ttt-score-symbol { font-size:1.25rem; font-weight:700; line-height:1; }
+.ttt-sx { color:var(--ttt-x-color); }
+.ttt-so { color:var(--ttt-o-color); }
+.ttt-score-count { font-size:1.5rem; font-weight:800; color:var(--ttt-ink); line-height:1.1; }
+.ttt-score-label { font-size:0.65rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--ttt-ink-soft); }
+
+.ttt-turn-bar { display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:1rem; }
+.ttt-turn-indicator { display:flex; align-items:center; gap:0.5rem; font-size:0.9rem; font-weight:600; color:var(--ttt-ink); }
+.ttt-turn-symbol { font-size:1.25rem; font-weight:800; }
+.ttt-turn-indicator[data-player="x"] .ttt-turn-symbol { color:var(--ttt-x-color); }
+.ttt-turn-indicator[data-player="o"] .ttt-turn-symbol { color:var(--ttt-o-color); }
+.ttt-mode-badge { font-size:0.7rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:0.25rem 0.6rem; background:var(--ttt-cell-hover); border-radius:0.4rem; color:var(--ttt-ink-soft); }
+
+.ttt-board-wrap { position:relative; width:100%; max-width:400px; aspect-ratio:1; margin:0 auto; }
+.ttt-board { display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); width:100%; height:100%; border-radius:1.25rem; overflow:hidden; box-shadow:var(--ttt-shadow-lg); position:relative; }
+.ttt-cell { background:var(--ttt-cell-bg); border:1px solid var(--ttt-border); display:flex; align-items:center; justify-content:center; font-size:clamp(2rem,8vw,3.5rem); font-weight:800; cursor:pointer; transition:background 0.12s,transform 0.08s; color:var(--ttt-ink); line-height:1; padding:0; position:relative; overflow:hidden; -webkit-tap-highlight-color:transparent; }
+.ttt-cell:hover:not(:disabled):not([data-player]) { background:var(--ttt-cell-hover); }
+.ttt-cell:active:not(:disabled) { transform:scale(0.93); }
+.ttt-cell[data-player="x"] { color:var(--ttt-x-color); cursor:default; }
+.ttt-cell[data-player="o"] { color:var(--ttt-o-color); cursor:default; }
+.ttt-cell.ttt-winning { background:color-mix(in srgb,var(--ttt-win-line) 12%,var(--ttt-cell-bg)); }
+.ttt-cell:disabled { cursor:default; }
+
+.ttt-win-line { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:5; overflow:visible; }
+.ttt-win-line line { stroke:var(--ttt-win-line); opacity:0; stroke-dasharray:4; stroke-dashoffset:4; transition:opacity 0.1s; }
+.ttt-win-line.ttt-win-line-show line { opacity:0.85; stroke-dashoffset:0; animation:drawLine 0.35s cubic-bezier(0.4,0,0.2,1) forwards; }
+@keyframes drawLine { from{stroke-dashoffset:4} to{stroke-dashoffset:0} }
+
+@keyframes cellPop { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.12);opacity:1} 100%{transform:scale(1);opacity:1} }
+.ttt-cell-pop { animation:cellPop 0.22s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+.ttt-result { position:relative; width:100%; max-width:400px; margin:1rem auto 0; }
+.ttt-result-inner { background:var(--ttt-surface); border:1.5px solid var(--ttt-border); border-radius:1rem; padding:1.25rem; display:flex; align-items:center; gap:0.75rem; box-shadow:var(--ttt-shadow); animation:resultReveal 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+@keyframes resultReveal { from{opacity:0;transform:scale(0.92) translateY(6px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.ttt-result-symbol { font-size:2rem; font-weight:800; flex-shrink:0; line-height:1; }
+.ttt-result-msg { font-size:1.1rem; font-weight:700; color:var(--ttt-ink); }
+.ttt-result-msg small { display:block; font-size:0.78rem; font-weight:500; color:var(--ttt-ink-soft); margin-top:0.2rem; }
+
+.ttt-action-bar { display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:center; margin-top:1.25rem; width:100%; max-width:400px; }
+.ttt-action-btn { padding:0.7rem 1.1rem; border-radius:0.8rem; font-size:0.85rem; font-weight:700; cursor:pointer; transition:background 0.15s,border-color 0.15s,transform 0.1s,opacity 0.15s; border:1.5px solid transparent; }
+.ttt-action-btn:active { transform:scale(0.97); }
+.ttt-action-primary { background:var(--ttt-ink); color:#fff; border-color:var(--ttt-ink); }
+.ttt-action-primary:hover { opacity:0.85; }
+.ttt-action-secondary { background:var(--ttt-cell-bg); color:var(--ttt-ink); border-color:var(--ttt-border); }
+.ttt-action-secondary:hover { border-color:var(--ttt-brand); background:var(--ttt-cell-hover); }
+.ttt-action-ghost { background:transparent; color:var(--ttt-ink-soft); border-color:transparent; font-size:0.78rem; }
+.ttt-action-ghost:hover { color:var(--ttt-ink); }
+
+.ttt-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:50; display:flex; align-items:flex-end; justify-content:center; padding:0; backdrop-filter:blur(2px); }
+@media(min-width:480px) { .ttt-modal-overlay { align-items:center; padding:1rem; } }
+.ttt-modal { background:var(--ttt-surface); border:1px solid var(--ttt-border); border-radius:1.5rem 1.5rem 0 0; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; box-shadow:var(--ttt-shadow-lg); display:flex; flex-direction:column; animation:slideUp 0.28s cubic-bezier(0.16,1,0.3,1) both; }
+@media(min-width:480px) { .ttt-modal { border-radius:1.5rem; animation:scaleIn 0.22s cubic-bezier(0.16,1,0.3,1) both; } }
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+@keyframes scaleIn { from{transform:scale(0.92);opacity:0} to{transform:scale(1);opacity:1} }
+.ttt-modal-header { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem 0; }
+.ttt-modal-header h2 { font-size:1.15rem; font-weight:700; color:var(--ttt-ink); margin:0; }
+.ttt-modal-close { width:2rem; height:2rem; border-radius:50%; border:none; background:var(--ttt-cell-hover); color:var(--ttt-ink-soft); font-size:0.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.15s; }
+.ttt-modal-close:hover { background:var(--ttt-border); }
+.ttt-modal-body { padding:1rem 1.5rem; flex:1; }
+.ttt-modal-footer { padding:0.75rem 1.5rem 1.5rem; display:flex; gap:0.6rem; justify-content:flex-end; }
+.ttt-modal-save { padding:0.65rem 1.5rem; background:var(--ttt-ink); color:#fff; border:none; border-radius:0.75rem; font-size:0.9rem; font-weight:700; cursor:pointer; transition:opacity 0.15s; }
+.ttt-modal-save:hover { opacity:0.85; }
+.ttt-modal-cancel { padding:0.65rem 1.5rem; background:var(--ttt-cell-bg); color:var(--ttt-ink); border:1.5px solid var(--ttt-border); border-radius:0.75rem; font-size:0.9rem; font-weight:600; cursor:pointer; transition:border-color 0.15s; }
+.ttt-modal-cancel:hover { border-color:var(--ttt-brand); }
+
+.ttt-custom-section { margin-bottom:1.25rem; }
+.ttt-custom-label { display:block; font-size:0.78rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--ttt-ink-soft); margin-bottom:0.5rem; }
+.ttt-preset-row { display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.5rem; }
+.ttt-preset-btn { width:2.4rem; height:2.4rem; border-radius:0.6rem; border:1.5px solid var(--ttt-border); background:var(--ttt-cell-bg); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:border-color 0.15s,background 0.15s,transform 0.1s; }
+.ttt-preset-btn:hover, .ttt-preset-btn.ttt-preset-active { border-color:var(--ttt-brand); background:var(--ttt-cell-hover); transform:scale(1.08); }
+.ttt-custom-input { width:100%; padding:0.5rem 0.75rem; border:1.5px solid var(--ttt-border); border-radius:0.6rem; font-size:0.9rem; background:var(--ttt-cell-bg); color:var(--ttt-ink); outline:none; transition:border-color 0.15s; box-sizing:border-box; }
+.ttt-custom-input:focus { border-color:var(--ttt-brand); }
+
+.ttt-theme-row { display:flex; gap:0.5rem; flex-wrap:wrap; }
+.ttt-theme-btn { display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.75rem; border-radius:0.6rem; border:1.5px solid var(--ttt-border); background:var(--ttt-cell-bg); color:var(--ttt-ink); font-size:0.8rem; font-weight:600; cursor:pointer; transition:border-color 0.15s,background 0.15s; }
+.ttt-theme-btn:hover, .ttt-theme-btn.ttt-theme-active { border-color:var(--ttt-brand); background:var(--ttt-cell-hover); }
+.ttt-theme-swatch { width:1rem; height:1rem; border-radius:50%; display:block; flex-shrink:0; }
+
+.ttt-stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0.75rem; }
+.ttt-stat-full { grid-column:1 / -1; border-top:1px solid var(--ttt-border); padding-top:0.75rem; }
+.ttt-stat-box { display:flex; flex-direction:column; align-items:center; gap:0.2rem; }
+.ttt-stat-num { font-size:2rem; font-weight:800; color:var(--ttt-ink); line-height:1; }
+.ttt-stat-lbl { font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--ttt-ink-soft); }
+
+@keyframes pulseActive { 0%,100%{box-shadow:0 0 0 0 rgba(126,147,235,0)} 50%{box-shadow:0 0 0 4px rgba(126,147,235,0.25)} }
+.ttt-score-item.ttt-score-active { animation:pulseActive 1.5s ease infinite; border-radius:0.6rem; }
+
+@media(max-width:380px) {
+  .ttt-header-inner{padding:0 0.75rem}
+  .ttt-main{padding:1rem 0.5rem 2rem}
+  .ttt-score-bar{padding:0.6rem 0.75rem}
+  .ttt-action-bar{gap:0.4rem}
+  .ttt-action-btn{padding:0.6rem 0.75rem;font-size:0.78rem}
+}
+@media(prefers-reduced-motion:reduce) {
+  .ttt-cell-pop,.ttt-win-line.ttt-win-line-show line,.ttt-result-inner,.ttt-modal,.ttt-toast{animation:none !important}
+}
+</style>
+
+<script>
+import { burstConfetti, createSoundKit } from '../../lib/effects.ts';
+
+// ── Types ──
+type Player = 'x' | 'o';
+type Cell = Player | null;
+type GameMode = 'pvp' | 'ai';
+type Difficulty = 'easy' | 'medium' | 'impossible';
+type BoardTheme = 'default' | 'ocean' | 'forest' | 'candy' | 'dusk';
+
+const STORAGE_KEY = 'randomlyo:ttt:scores';
+const PREFS_KEY   = 'randomlyo:ttt:prefs';
+
+const WIN_LINES = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6],
+];
+
+// ── State ──
+let board: Cell[] = Array(9).fill(null);
+let currentPlayer: Player = 'x';
+let gameOver = false;
+let gameMode: GameMode = 'pvp';
+let difficulty: Difficulty = 'medium';
+let aiPlayer: Player = 'o';
+let scores = { x: 0, o: 0, d: 0 };
+let symbolX = 'X';
+let symbolO = 'O';
+let boardTheme: BoardTheme = 'default';
+let darkMode = false;
+let soundOn = false;
+let pendingX = symbolX;
+let pendingO = symbolO;
+let pendingTheme: BoardTheme = boardTheme;
+
+// ── Sound ──
+const sound = createSoundKit();
+function playPlaceSound() { if (!soundOn) return; sound.setMuted(false); sound.tick(); sound.setMuted(true); }
+function playWinSound() { if (!soundOn) return; sound.setMuted(false); sound.chime(); sound.setMuted(true); }
+
+// ── Persistence ──
+function loadScores() { try { const r = localStorage.getItem(STORAGE_KEY); if (r) scores = {...scores,...JSON.parse(r)}; } catch {} }
+function saveScores() { localStorage.setItem(STORAGE_KEY, JSON.stringify(scores)); }
+function loadPrefs() {
+  try {
+    const r = localStorage.getItem(PREFS_KEY);
+    if (!r) return;
+    const p = JSON.parse(r);
+    if (p.symbolX) symbolX = p.symbolX;
+    if (p.symbolO) symbolO = p.symbolO;
+    if (p.boardTheme) boardTheme = p.boardTheme;
+    if (typeof p.darkMode === 'boolean') darkMode = p.darkMode;
+    if (typeof p.soundOn === 'boolean') soundOn = p.soundOn;
+  } catch {}
+}
+function savePrefs() { localStorage.setItem(PREFS_KEY, JSON.stringify({symbolX,symbolO,boardTheme,darkMode,soundOn})); }
+
+// ── Toast ──
+let toastTimer = 0;
+function showToast(msg: string) {
+  const el = document.getElementById('ttt-toast')!;
+  el.textContent = msg;
+  el.classList.add('ttt-toast-show');
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => el.classList.remove('ttt-toast-show'), 1800);
+}
+
+// ── DOM helpers ──
+function show(id: string) { document.getElementById(id)?.classList.remove('ttt-hidden'); }
+function hide(id: string) { document.getElementById(id)?.classList.add('ttt-hidden'); }
+function showScreen(name: 'mode'|'difficulty'|'game') {
+  ['mode','difficulty','game'].forEach(s => {
+    document.getElementById(`ttt-screen-${s}`)?.classList.toggle('ttt-hidden', s !== name);
+  });
+}
+
+// ── Score UI ──
+function renderScores() {
+  (document.getElementById('score-x') as HTMLElement).textContent = String(scores.x);
+  (document.getElementById('score-o') as HTMLElement).textContent = String(scores.o);
+  (document.getElementById('score-d') as HTMLElement).textContent = String(scores.d);
+  (document.getElementById('modal-x-wins') as HTMLElement).textContent = String(scores.x);
+  (document.getElementById('modal-o-wins') as HTMLElement).textContent = String(scores.o);
+  (document.getElementById('modal-draws') as HTMLElement).textContent = String(scores.d);
+  (document.getElementById('modal-total') as HTMLElement).textContent = String(scores.x+scores.o+scores.d);
+}
+
+// ── Apply prefs to DOM ──
+function applyPrefs() {
+  const root = document.getElementById('ttt-root')!;
+  root.classList.toggle('ttt-dark', darkMode);
+  ['ttt-theme-ocean','ttt-theme-forest','ttt-theme-candy','ttt-theme-dusk'].forEach(c => root.classList.remove(c));
+  if (boardTheme !== 'default') root.classList.add(`ttt-theme-${boardTheme}`);
+  (document.getElementById('score-x-symbol') as HTMLElement).textContent = symbolX;
+  (document.getElementById('score-o-symbol') as HTMLElement).textContent = symbolO;
+  (document.getElementById('score-x-label') as HTMLElement).textContent = `Player ${symbolX}`;
+  (document.getElementById('score-o-label') as HTMLElement).textContent = `Player ${symbolO}`;
+  (document.getElementById('modal-x-label') as HTMLElement).textContent = `${symbolX} Wins`;
+  (document.getElementById('modal-o-label') as HTMLElement).textContent = `${symbolO} Wins`;
+  (document.getElementById('ttt-dark-icon') as HTMLElement).textContent = darkMode ? '☀️' : '🌙';
+  (document.getElementById('ttt-sound-icon') as HTMLElement).textContent = soundOn ? '🔊' : '🔇';
+  document.querySelectorAll('.ttt-theme-btn').forEach(btn => {
+    (btn as HTMLElement).classList.toggle('ttt-theme-active', (btn as HTMLElement).dataset.theme === boardTheme);
+  });
+}
+
+function renderBoard() {
+  board.forEach((cell, i) => {
+    const el = document.getElementById(`cell-${i}`) as HTMLButtonElement;
+    if (cell) {
+      el.textContent = cell === 'x' ? symbolX : symbolO;
+      el.dataset.player = cell;
+      el.disabled = true;
+      el.setAttribute('aria-label', `Cell ${i+1}, ${cell === 'x' ? symbolX : symbolO}`);
+    } else {
+      el.textContent = '';
+      delete el.dataset.player;
+      el.disabled = gameOver;
+      el.setAttribute('aria-label', `Cell ${i+1}, empty`);
+    }
+    el.classList.remove('ttt-winning');
+  });
+}
+
+// ── Turn indicator ──
+function updateTurnUI() {
+  const ind = document.getElementById('ttt-turn-indicator')!;
+  const sym = document.getElementById('ttt-turn-symbol')!;
+  const txt = document.getElementById('ttt-turn-text')!;
+  ind.dataset.player = currentPlayer;
+  sym.textContent = currentPlayer === 'x' ? symbolX : symbolO;
+  if (gameOver) { txt.textContent = ''; return; }
+  txt.textContent = (gameMode === 'ai' && currentPlayer === aiPlayer) ? 'AI is thinking…' : 'Your turn';
+  document.getElementById('score-x-wrap')!.classList.toggle('ttt-score-active', currentPlayer === 'x' && !gameOver);
+  document.getElementById('score-o-wrap')!.classList.toggle('ttt-score-active', currentPlayer === 'o' && !gameOver);
+}
+
+function setBadge() {
+  const badge = document.getElementById('ttt-mode-badge')!;
+  badge.textContent = gameMode === 'pvp' ? 'PvP' : difficulty.charAt(0).toUpperCase()+difficulty.slice(1)+' AI';
+}
+
+// ── Win detection ──
+function checkWinner(b: Cell[]): {winner:Player; line:number[]} | null {
+  for (const line of WIN_LINES) {
+    const [a,c,d] = line;
+    if (b[a] && b[a] === b[c] && b[a] === b[d]) return {winner: b[a] as Player, line};
+  }
+  return null;
+}
+function isDraw(b: Cell[]) { return b.every(c => c !== null) && !checkWinner(b); }
+
+// ── Win line SVG ──
+function showWinLine(line: number[]) {
+  const center = (idx: number) => ({x:(idx%3)+0.5, y:Math.floor(idx/3)+0.5});
+  const s = center(line[0]);
+  const e = center(line[line.length-1]);
+  const lineEl = document.getElementById('ttt-win-line-el') as SVGLineElement;
+  lineEl.setAttribute('x1',String(s.x)); lineEl.setAttribute('y1',String(s.y));
+  lineEl.setAttribute('x2',String(e.x)); lineEl.setAttribute('y2',String(e.y));
+  document.getElementById('ttt-win-line')!.classList.add('ttt-win-line-show');
+  line.forEach(i => document.getElementById(`cell-${i}`)?.classList.add('ttt-winning'));
+}
+function clearWinLine() {
+  document.getElementById('ttt-win-line')!.classList.remove('ttt-win-line-show');
+  document.querySelectorAll('.ttt-winning').forEach(el => el.classList.remove('ttt-winning'));
+}
+
+// ── Result display ──
+function showResult(winner: Player|'draw') {
+  const symEl = document.getElementById('ttt-result-symbol')!;
+  const msgEl = document.getElementById('ttt-result-msg')!;
+  if (winner === 'draw') {
+    symEl.textContent = '🤝'; symEl.style.color = '';
+    msgEl.innerHTML = `Draw! <small>No one wins this round</small>`;
+  } else {
+    const sym = winner === 'x' ? symbolX : symbolO;
+    symEl.textContent = sym;
+    symEl.style.color = winner === 'x' ? 'var(--ttt-x-color)' : 'var(--ttt-o-color)';
+    const isHuman = gameMode === 'pvp' || winner !== aiPlayer;
+    const label = gameMode === 'pvp' ? `Player ${sym}` : (isHuman ? 'You' : 'AI');
+    msgEl.innerHTML = `${label} wins! <small>${winner.toUpperCase()} takes the round</small>`;
+  }
+  show('ttt-result');
+}
+
+// ── Reset game ──
+function resetGame(keepScores = true) {
+  board = Array(9).fill(null);
+  currentPlayer = 'x';
+  gameOver = false;
+  clearWinLine();
+  renderBoard();
+  hide('ttt-result');
+  updateTurnUI();
+  setBadge();
+  if (!keepScores) { scores = {x:0,o:0,d:0}; saveScores(); renderScores(); }
+  if (gameMode === 'ai' && aiPlayer === 'x') setTimeout(doAiMove, 400);
+}
+
+// ── Place move ──
+function disableAll() { for (let i=0;i<9;i++) (document.getElementById(`cell-${i}`) as HTMLButtonElement).disabled = true; }
+function enableEmpty() { for (let i=0;i<9;i++) { if (!board[i]) (document.getElementById(`cell-${i}`) as HTMLButtonElement).disabled = false; } }
+
+function makeMove(index: number) {
+  if (board[index] || gameOver) return;
+  board[index] = currentPlayer;
+  const cellEl = document.getElementById(`cell-${index}`) as HTMLButtonElement;
+  cellEl.textContent = currentPlayer === 'x' ? symbolX : symbolO;
+  cellEl.dataset.player = currentPlayer;
+  cellEl.disabled = true;
+  cellEl.classList.remove('ttt-cell-pop');
+  void cellEl.offsetWidth;
+  cellEl.classList.add('ttt-cell-pop');
+  playPlaceSound();
+
+  const result = checkWinner(board);
+  if (result) {
+    gameOver = true;
+    scores[result.winner]++; saveScores(); renderScores();
+    showWinLine(result.line);
+    showResult(result.winner);
+    playWinSound();
+    burstConfetti(document.getElementById('ttt-board-wrap')!, {count:40,spread:120,duration:2000});
+    disableAll();
+    updateTurnUI();
+    return;
+  }
+  if (isDraw(board)) {
+    gameOver = true;
+    scores.d++; saveScores(); renderScores();
+    showResult('draw');
+    disableAll();
+    updateTurnUI();
+    return;
+  }
+  currentPlayer = currentPlayer === 'x' ? 'o' : 'x';
+  updateTurnUI();
+  if (gameMode === 'ai' && currentPlayer === aiPlayer) {
+    disableAll();
+    setTimeout(() => { if (!gameOver) doAiMove(); }, 380);
+  }
+}
+
+// ── Minimax AI ──
+function minimax(b: Cell[], depth: number, isMax: boolean, ai: Player, human: Player): number {
+  const r = checkWinner(b);
+  if (r) return r.winner === ai ? 10-depth : depth-10;
+  if (isDraw(b)) return 0;
+  const moves = b.map((c,i)=>c===null?i:-1).filter(i=>i>=0);
+  if (isMax) {
+    let best = -Infinity;
+    for (const m of moves) { b[m]=ai; best=Math.max(best,minimax(b,depth+1,false,ai,human)); b[m]=null; }
+    return best;
+  } else {
+    let best = Infinity;
+    for (const m of moves) { b[m]=human; best=Math.min(best,minimax(b,depth+1,true,ai,human)); b[m]=null; }
+    return best;
+  }
+}
+
+function bestMove(b: Cell[], ai: Player): number {
+  const human: Player = ai==='x'?'o':'x';
+  let bestScore = -Infinity, bestIdx = -1;
+  b.forEach((c,m) => {
+    if (c !== null) return;
+    b[m]=ai; const score=minimax(b,0,false,ai,human); b[m]=null;
+    if (score>bestScore) { bestScore=score; bestIdx=m; }
+  });
+  return bestIdx;
+}
+
+function bestBlockOrWin(b: Cell[], ai: Player, human: Player): number {
+  for (const line of WIN_LINES) {
+    const aiCount = line.filter(i=>b[i]===ai).length;
+    const emptyIdx = line.find(i=>b[i]===null);
+    if (aiCount===2 && emptyIdx!==undefined) return emptyIdx;
+  }
+  for (const line of WIN_LINES) {
+    const humanCount = line.filter(i=>b[i]===human).length;
+    const emptyIdx = line.find(i=>b[i]===null);
+    if (humanCount===2 && emptyIdx!==undefined) return emptyIdx;
+  }
+  return -1;
+}
+
+function doAiMove() {
+  if (gameOver) return;
+  const human: Player = aiPlayer==='x'?'o':'x';
+  const empty = board.map((c,i)=>c===null?i:-1).filter(i=>i>=0);
+  if (empty.length===0) return;
+  let idx: number;
+  if (difficulty==='easy') {
+    const wb = bestBlockOrWin(board,aiPlayer,human);
+    idx = (Math.random()<0.1 && wb!==-1) ? wb : empty[Math.floor(Math.random()*empty.length)];
+  } else if (difficulty==='medium') {
+    const opt = bestMove([...board],aiPlayer);
+    idx = Math.random()<0.6 ? opt : empty[Math.floor(Math.random()*empty.length)];
+  } else {
+    idx = bestMove([...board],aiPlayer);
+  }
+  makeMove(idx);
+  if (!gameOver) enableEmpty();
+}
+
+// ── Mode setup ──
+function startPvP() { gameMode='pvp'; aiPlayer='o'; showScreen('game'); resetGame(true); }
+function startAI(diff: Difficulty) { gameMode='ai'; difficulty=diff; aiPlayer='o'; showScreen('game'); resetGame(true); }
+function startQuickMatch() {
+  const diffs: Difficulty[] = ['easy','medium','impossible'];
+  const picked = diffs[Math.floor(Math.random()*diffs.length)];
+  startAI(picked);
+  showToast(`Quick Match! Difficulty: ${picked.charAt(0).toUpperCase()+picked.slice(1)}`);
+}
+
+// ── Customize modal ──
+function openCustomize() {
+  pendingX=symbolX; pendingO=symbolO; pendingTheme=boardTheme;
+  (document.getElementById('custom-x-input') as HTMLInputElement).value=symbolX;
+  (document.getElementById('custom-o-input') as HTMLInputElement).value=symbolO;
+  updatePresetActive();
+  show('ttt-customize-modal');
+}
+function updatePresetActive() {
+  document.querySelectorAll('.ttt-preset-btn').forEach(btn => {
+    const b = btn as HTMLElement;
+    b.classList.toggle('ttt-preset-active',(b.dataset.for==='x'&&b.dataset.val===pendingX)||(b.dataset.for==='o'&&b.dataset.val===pendingO));
+  });
+  document.querySelectorAll('.ttt-theme-btn').forEach(btn => {
+    (btn as HTMLElement).classList.toggle('ttt-theme-active',(btn as HTMLElement).dataset.theme===pendingTheme);
+  });
+}
+function saveCustomize() {
+  const xIn = (document.getElementById('custom-x-input') as HTMLInputElement).value.trim();
+  const oIn = (document.getElementById('custom-o-input') as HTMLInputElement).value.trim();
+  symbolX = (xIn||pendingX).slice(0,2);
+  symbolO = (oIn||pendingO).slice(0,2);
+  boardTheme = pendingTheme;
+  savePrefs(); applyPrefs(); renderBoard(); updateTurnUI();
+  hide('ttt-customize-modal');
+  showToast('Saved!');
+}
+
+// ── Init ──
+function init() {
+  loadScores(); loadPrefs(); applyPrefs(); renderScores();
+  showScreen('mode');
+
+  document.getElementById('btn-pvp')!.addEventListener('click', startPvP);
+  document.getElementById('btn-pvai')!.addEventListener('click', () => showScreen('difficulty'));
+  document.getElementById('btn-quick-match')!.addEventListener('click', startQuickMatch);
+  document.getElementById('btn-back-to-mode')!.addEventListener('click', () => showScreen('mode'));
+
+  document.querySelectorAll('.ttt-diff-btn').forEach(btn => {
+    btn.addEventListener('click', () => startAI((btn as HTMLElement).dataset.diff as Difficulty));
+  });
+
+  document.querySelectorAll('.ttt-cell').forEach(cell => {
+    cell.addEventListener('click', () => {
+      if (gameOver || (gameMode==='ai' && currentPlayer===aiPlayer)) return;
+      makeMove(parseInt((cell as HTMLElement).dataset.index!));
+    });
+  });
+
+  document.getElementById('btn-play-again')!.addEventListener('click', () => resetGame(true));
+  document.getElementById('btn-change-mode')!.addEventListener('click', () => showScreen('mode'));
+  document.getElementById('btn-reset-score')!.addEventListener('click', () => { resetGame(false); showToast('Score reset!'); });
+
+  document.getElementById('ttt-sound-btn')!.addEventListener('click', () => {
+    soundOn = !soundOn;
+    if (soundOn) sound.unlock();
+    (document.getElementById('ttt-sound-icon') as HTMLElement).textContent = soundOn?'🔊':'🔇';
+    document.getElementById('ttt-sound-btn')!.setAttribute('aria-pressed', String(soundOn));
+    savePrefs(); showToast(soundOn?'Sound on':'Sound off');
+  });
+
+  document.getElementById('ttt-dark-btn')!.addEventListener('click', () => {
+    darkMode=!darkMode; applyPrefs(); savePrefs();
+    document.getElementById('ttt-dark-btn')!.setAttribute('aria-pressed', String(darkMode));
+  });
+
+  document.getElementById('ttt-customize-btn')!.addEventListener('click', openCustomize);
+  document.getElementById('btn-close-customize')!.addEventListener('click', () => hide('ttt-customize-modal'));
+  document.getElementById('btn-save-customize')!.addEventListener('click', saveCustomize);
+  document.getElementById('ttt-customize-modal')!.addEventListener('click', e => { if (e.target===e.currentTarget) hide('ttt-customize-modal'); });
+
+  document.querySelectorAll('.ttt-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const b = btn as HTMLElement;
+      if (b.dataset.for==='x') { pendingX=b.dataset.val!; (document.getElementById('custom-x-input') as HTMLInputElement).value=pendingX; }
+      else { pendingO=b.dataset.val!; (document.getElementById('custom-o-input') as HTMLInputElement).value=pendingO; }
+      updatePresetActive();
+    });
+  });
+
+  document.querySelectorAll('.ttt-theme-btn').forEach(btn => {
+    btn.addEventListener('click', () => { pendingTheme=(btn as HTMLElement).dataset.theme as BoardTheme; updatePresetActive(); });
+  });
+
+  document.getElementById('ttt-stats-btn')!.addEventListener('click', () => { renderScores(); show('ttt-stats-modal'); });
+  document.getElementById('btn-close-stats')!.addEventListener('click', () => hide('ttt-stats-modal'));
+  document.getElementById('btn-close-stats-2')!.addEventListener('click', () => hide('ttt-stats-modal'));
+  document.getElementById('btn-modal-reset')!.addEventListener('click', () => { scores={x:0,o:0,d:0}; saveScores(); renderScores(); showToast('Score reset!'); });
+  document.getElementById('ttt-stats-modal')!.addEventListener('click', e => { if (e.target===e.currentTarget) hide('ttt-stats-modal'); });
+
+  sound.setMuted(!soundOn);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</Layout>
