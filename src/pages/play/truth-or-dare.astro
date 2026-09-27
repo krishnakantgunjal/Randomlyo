@@ -1,0 +1,663 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ListInput from '../../components/ListInput.astro';
+import promptsData from '../../data/truth-or-dare-prompts.json';
+
+const title = 'Truth or Dare — Adaptive Party Game | Randomlyo';
+const description = 'Play Truth or Dare with prompts tailored to your group, setting, and vibe. Features custom prompts, adaptive filtering, and player substitution.';
+---
+
+<Layout title={title} description={description}>
+<div class="tod-root" id="tod-root">
+
+  <!-- HEADER -->
+  <header class="tod-header">
+    <div class="tod-header-inner">
+      <a href="/#tools" class="tod-back-link" aria-label="Back to all tools">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Tools
+      </a>
+      <h1 class="tod-title">Truth or Dare</h1>
+      <div class="tod-controls" role="toolbar" aria-label="Game controls">
+        <button id="tod-sound-btn" type="button" class="tod-icon-btn" aria-pressed="false" aria-label="Turn sound on" title="Sound is off">
+          <span id="tod-sound-icon" aria-hidden="true">🔇</span>
+        </button>
+        <button id="tod-dark-btn" type="button" class="tod-icon-btn" aria-pressed="false" aria-label="Switch to dark mode" title="Light mode">
+          <span id="tod-dark-icon" aria-hidden="true">🌙</span>
+        </button>
+      </div>
+    </div>
+    <div id="tod-toast" class="tod-toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  </header>
+
+  <main class="tod-main">
+
+    <!-- SETUP SCREEN -->
+    <div class="tod-screen" id="tod-screen-setup">
+      <div class="tod-card">
+        <h2 class="tod-heading">Game Setup</h2>
+        <p class="tod-subheading">Customize the game to fit your exact vibe.</p>
+
+        <form id="tod-setup-form" class="tod-form">
+          <!-- Age Range -->
+          <div class="tod-field">
+            <label class="tod-label">Age Range</label>
+            <div class="tod-radio-group">
+              <label class="tod-radio">
+                <input type="radio" name="age" value="all" checked>
+                <span>All Ages</span>
+              </label>
+              <label class="tod-radio">
+                <input type="radio" name="age" value="18+">
+                <span>18+</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Who -->
+          <div class="tod-field">
+            <label class="tod-label">Who is playing?</label>
+            <select name="who" class="tod-select" required>
+              <option value="friends" selected>Friends</option>
+              <option value="couple">Couple</option>
+              <option value="family">Family</option>
+              <option value="classmates">Classmates</option>
+              <option value="coworkers">Coworkers</option>
+            </select>
+          </div>
+
+          <!-- Setting -->
+          <div class="tod-field">
+            <label class="tod-label">Setting</label>
+            <select name="setting" class="tod-select" required>
+              <option value="party" selected>Party</option>
+              <option value="date">Date</option>
+              <option value="college">College</option>
+              <option value="roadtrip">Road Trip</option>
+              <option value="sleepover">Sleepover</option>
+              <option value="online">Online / Video Call</option>
+            </select>
+          </div>
+
+          <!-- Tone (Multi-select) -->
+          <div class="tod-field">
+            <label class="tod-label">Vibe / Tone (Select multiple)</label>
+            <div class="tod-checkbox-grid">
+              <label class="tod-checkbox"><input type="checkbox" name="tone" value="funny" checked> <span>Funny</span></label>
+              <label class="tod-checkbox"><input type="checkbox" name="tone" value="deep"> <span>Deep</span></label>
+              <label class="tod-checkbox"><input type="checkbox" name="tone" value="embarrassing"> <span>Embarrassing</span></label>
+              <label class="tod-checkbox"><input type="checkbox" name="tone" value="chaotic" checked> <span>Chaotic</span></label>
+              <label class="tod-checkbox" id="lbl-tone-flirty"><input type="checkbox" name="tone" value="flirty" id="chk-flirty"> <span>Romantic (Flirty)</span></label>
+            </div>
+          </div>
+
+          <!-- Intensity -->
+          <div class="tod-field">
+            <label class="tod-label">Max Intensity</label>
+            <div class="tod-radio-group">
+              <label class="tod-radio"><input type="radio" name="intensity" value="mild" checked> <span>Mild</span></label>
+              <label class="tod-radio"><input type="radio" name="intensity" value="medium"> <span>Medium</span></label>
+              <label class="tod-radio" id="lbl-int-wild"><input type="radio" name="intensity" value="wild" id="chk-wild"> <span>Wild</span></label>
+            </div>
+          </div>
+
+          <!-- Players -->
+          <div class="tod-field">
+            <label class="tod-label" for="namesList">Players</label>
+            <p class="tod-hint">Enter names to enable Player Mode (e.g., substitute into prompts).</p>
+            <ListInput
+              id="namesList"
+              name="namesList"
+              defaultValue=""
+              placeholder={'Alice\nBob\nCharlie\nDiana'}
+              class="tod-list-input mt-2"
+            />
+          </div>
+
+          <button type="submit" class="tod-btn-primary mt-4">Start Game</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div class="tod-screen tod-hidden" id="tod-screen-game">
+      
+      <div class="tod-stats-bar">
+        <span id="tod-pool-stats">Loading...</span>
+        <button id="btn-back-setup" type="button" class="tod-btn-ghost">⚙️ Setup</button>
+      </div>
+
+      <!-- The Prompt Card -->
+      <div class="tod-prompt-card" id="tod-prompt-card">
+        <div class="tod-prompt-type" id="tod-prompt-type">Welcome</div>
+        <div class="tod-prompt-text" id="tod-prompt-text">Choose Truth, Dare, or Random to start!</div>
+        <div class="tod-prompt-meta" id="tod-prompt-meta"></div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="tod-game-actions">
+        <button type="button" class="tod-btn-action tod-btn-truth" id="btn-draw-truth">Truth</button>
+        <button type="button" class="tod-btn-action tod-btn-random" id="btn-draw-random">Random</button>
+        <button type="button" class="tod-btn-action tod-btn-dare" id="btn-draw-dare">Dare</button>
+      </div>
+      
+      <div class="tod-secondary-actions">
+        <button type="button" class="tod-btn-secondary" id="btn-reroll">Reroll (Skip)</button>
+        <button type="button" class="tod-btn-secondary" id="btn-add-prompt">+ Add Your Own</button>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<!-- ADD CUSTOM PROMPT MODAL -->
+<div class="tod-modal-overlay tod-hidden" id="tod-add-modal" role="dialog" aria-modal="true">
+  <div class="tod-modal">
+    <div class="tod-modal-header">
+      <h2>Add Custom Prompt</h2>
+      <button class="tod-modal-close" id="btn-close-add" type="button" aria-label="Close">&#10005;</button>
+    </div>
+    <form id="tod-add-form" class="tod-modal-body">
+      <div class="tod-field">
+        <label class="tod-label">Type</label>
+        <select id="add-type" class="tod-select" required>
+          <option value="truth">Truth</option>
+          <option value="dare">Dare</option>
+        </select>
+      </div>
+      <div class="tod-field">
+        <label class="tod-label">Prompt Text</label>
+        <p class="tod-hint">Use {'{player}'} and {'{player2}'} for name substitution.</p>
+        <textarea id="add-text" class="tod-textarea" required rows="3" placeholder={'I dare {player} to...'}></textarea>
+      </div>
+      <div class="tod-field">
+        <label class="tod-checkbox mt-2">
+          <input type="checkbox" id="add-safe"> 
+          <span>Is this safe for All Ages?</span>
+        </label>
+      </div>
+      <div class="tod-modal-footer mt-4">
+        <button type="submit" class="tod-btn-primary">Add to Game</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- TEMPLATE DATA -->
+<script id="tod-seed-data" type="application/json">
+  {JSON.stringify(promptsData)}
+</script>
+
+<style>
+:root {
+  --tod-bg: #fafafa;
+  --tod-surface: #ffffff;
+  --tod-border: #e4e4e7;
+  --tod-ink: #18181b;
+  --tod-ink-soft: #71717a;
+  --tod-brand: #8b5cf6;
+  --tod-brand-hover: #7c3aed;
+  --tod-truth: #10b981;
+  --tod-dare: #ef4444;
+  --tod-random: #8b5cf6;
+  --tod-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+.tod-dark {
+  --tod-bg: #09090b;
+  --tod-surface: #18181b;
+  --tod-border: #27272a;
+  --tod-ink: #f4f4f5;
+  --tod-ink-soft: #a1a1aa;
+  --tod-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.tod-root { min-height:calc(100vh - 4rem); background:var(--tod-bg); color:var(--tod-ink); display:flex; flex-direction:column; transition:background 0.25s; font-family: system-ui, sans-serif; }
+.tod-hidden { display:none !important; }
+
+/* Header */
+.tod-header { background:var(--tod-surface); border-bottom:1px solid var(--tod-border); position:sticky; top:0; z-index:20; }
+.tod-header-inner { max-width:600px; margin:0 auto; padding:0 1.25rem; height:3.5rem; display:flex; align-items:center; gap:0.75rem; }
+.tod-back-link { display:flex; align-items:center; gap:0.3rem; font-size:0.8rem; font-weight:600; color:var(--tod-ink-soft); text-decoration:none; }
+.tod-back-link:hover { color:var(--tod-brand); }
+.tod-title { font-size:1.05rem; font-weight:700; margin:0; flex:1; text-align:center; }
+.tod-controls { display:flex; gap:0.25rem; }
+.tod-icon-btn { width:2.25rem; height:2.25rem; border-radius:0.6rem; border:none; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--tod-ink); }
+.tod-icon-btn:hover { background:var(--tod-border); }
+
+/* Toast */
+.tod-toast { position:fixed; top:4.5rem; left:50%; transform:translateX(-50%) translateY(-0.5rem); background:var(--tod-ink); color:var(--tod-surface); padding:0.5rem 1.25rem; border-radius:2rem; font-size:0.85rem; font-weight:600; opacity:0; pointer-events:none; z-index:100; transition:all 0.2s; white-space:nowrap; }
+.tod-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Main */
+.tod-main { flex:1; display:flex; flex-direction:column; align-items:center; padding:1.5rem 1rem 3rem; }
+.tod-screen { width:100%; max-width:500px; }
+.tod-card { background:var(--tod-surface); border:1px solid var(--tod-border); border-radius:1.5rem; padding:1.5rem; box-shadow:var(--tod-shadow); }
+
+.tod-heading { font-size:1.5rem; font-weight:800; margin:0 0 0.25rem; text-align:center; }
+.tod-subheading { font-size:0.9rem; color:var(--tod-ink-soft); margin:0 0 1.5rem; text-align:center; }
+
+/* Forms */
+.tod-form { display:flex; flex-direction:column; gap:1.25rem; }
+.tod-field { display:flex; flex-direction:column; gap:0.4rem; }
+.tod-label { font-size:0.85rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--tod-ink-soft); }
+.tod-hint { font-size:0.75rem; color:var(--tod-ink-soft); margin:0; }
+
+.tod-select, .tod-textarea { width:100%; padding:0.75rem; border:1px solid var(--tod-border); border-radius:0.75rem; background:var(--tod-bg); color:var(--tod-ink); font-size:0.95rem; font-family:inherit; }
+.tod-select:focus, .tod-textarea:focus { outline:2px solid var(--tod-brand); outline-offset:-1px; }
+.tod-textarea { resize:vertical; }
+
+/* Radio / Checkbox Groups */
+.tod-radio-group { display:flex; gap:0.5rem; background:var(--tod-bg); padding:0.25rem; border-radius:0.75rem; border:1px solid var(--tod-border); }
+.tod-radio { flex:1; position:relative; cursor:pointer; }
+.tod-radio input { position:absolute; opacity:0; width:0; height:0; }
+.tod-radio span { display:flex; align-items:center; justify-content:center; padding:0.5rem; border-radius:0.5rem; font-size:0.85rem; font-weight:600; color:var(--tod-ink-soft); transition:all 0.2s; text-align:center; }
+.tod-radio input:checked + span { background:var(--tod-surface); color:var(--tod-ink); box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+.tod-radio.disabled span { opacity:0.3; cursor:not-allowed; text-decoration:line-through; }
+
+.tod-checkbox-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; }
+.tod-checkbox { display:flex; align-items:center; gap:0.5rem; font-size:0.9rem; cursor:pointer; }
+.tod-checkbox input { accent-color:var(--tod-brand); width:1.1rem; height:1.1rem; }
+.tod-checkbox.disabled { opacity:0.3; cursor:not-allowed; text-decoration:line-through; }
+.tod-checkbox.disabled input { pointer-events:none; }
+
+.tod-list-input textarea { width:100%; min-height:80px; padding:0.75rem; border:1px solid var(--tod-border); border-radius:0.75rem; background:var(--tod-bg); color:var(--tod-ink); }
+
+/* Buttons */
+.tod-btn-primary { width:100%; padding:0.85rem; background:var(--tod-brand); color:#fff; border:none; border-radius:0.75rem; font-size:1rem; font-weight:700; cursor:pointer; transition:opacity 0.2s, transform 0.1s; }
+.tod-btn-primary:hover { opacity:0.9; }
+.tod-btn-primary:active { transform:scale(0.98); }
+
+.tod-btn-ghost { background:transparent; border:none; color:var(--tod-ink-soft); font-size:0.85rem; font-weight:600; cursor:pointer; }
+.tod-btn-ghost:hover { color:var(--tod-ink); }
+
+/* Game Screen */
+.tod-stats-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; font-size:0.85rem; font-weight:600; color:var(--tod-ink-soft); padding:0 0.5rem; }
+.tod-prompt-card { background:var(--tod-surface); border:2px solid var(--tod-border); border-radius:1.5rem; padding:2rem; box-shadow:var(--tod-shadow); min-height:250px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; transition:border-color 0.3s, background 0.3s; margin-bottom:1.5rem; position:relative; overflow:hidden; }
+.tod-prompt-card.type-truth { border-color:var(--tod-truth); background:color-mix(in srgb, var(--tod-truth) 4%, var(--tod-surface)); }
+.tod-prompt-card.type-dare { border-color:var(--tod-dare); background:color-mix(in srgb, var(--tod-dare) 4%, var(--tod-surface)); }
+
+.tod-prompt-type { font-size:0.9rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:1rem; }
+.tod-prompt-card.type-truth .tod-prompt-type { color:var(--tod-truth); }
+.tod-prompt-card.type-dare .tod-prompt-type { color:var(--tod-dare); }
+
+.tod-prompt-text { font-size:1.6rem; font-weight:700; line-height:1.3; color:var(--tod-ink); margin:0; }
+.tod-prompt-meta { margin-top:1.5rem; font-size:0.75rem; color:var(--tod-ink-soft); display:flex; gap:0.5rem; flex-wrap:wrap; justify-content:center; }
+.tod-tag { padding:0.2rem 0.5rem; border-radius:1rem; background:var(--tod-border); }
+
+/* Animation for drawing a card */
+@keyframes popIn { 0%{transform:scale(0.95);opacity:0} 100%{transform:scale(1);opacity:1} }
+.anim-pop { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+.tod-game-actions { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem; margin-bottom:1rem; }
+.tod-btn-action { padding:1rem 0.5rem; border:none; border-radius:1rem; font-size:1rem; font-weight:800; cursor:pointer; color:#fff; transition:transform 0.1s, opacity 0.2s; box-shadow:0 2px 10px rgba(0,0,0,0.1); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.tod-btn-action:active { transform:scale(0.95); }
+.tod-btn-action:hover { opacity:0.9; }
+.tod-btn-truth { background:var(--tod-truth); }
+.tod-btn-dare { background:var(--tod-dare); }
+.tod-btn-random { background:var(--tod-random); }
+
+.tod-secondary-actions { display:flex; justify-content:center; gap:1rem; }
+.tod-btn-secondary { padding:0.6rem 1rem; border:1px solid var(--tod-border); background:var(--tod-surface); color:var(--tod-ink); border-radius:0.75rem; font-size:0.85rem; font-weight:600; cursor:pointer; }
+.tod-btn-secondary:hover { background:var(--tod-border); }
+
+/* Modal */
+.tod-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:50; display:flex; align-items:center; justify-content:center; padding:1rem; backdrop-filter:blur(2px); }
+.tod-modal { background:var(--tod-surface); width:100%; max-width:400px; border-radius:1.25rem; box-shadow:var(--tod-shadow); display:flex; flex-direction:column; overflow:hidden; }
+.tod-modal-header { padding:1.25rem; border-bottom:1px solid var(--tod-border); display:flex; justify-content:space-between; align-items:center; }
+.tod-modal-header h2 { margin:0; font-size:1.1rem; font-weight:700; }
+.tod-modal-close { background:transparent; border:none; font-size:1rem; cursor:pointer; color:var(--tod-ink-soft); }
+.tod-modal-body { padding:1.25rem; }
+.tod-modal-footer { display:flex; justify-content:flex-end; }
+</style>
+
+<script>
+import { createSoundKit } from '../../lib/effects.ts';
+
+// Data Types
+type PromptType = 'truth' | 'dare';
+type Intensity = 'mild' | 'medium' | 'wild';
+interface Prompt {
+  id: string;
+  type: PromptType;
+  text: string;
+  who: string[];
+  tone: string[];
+  intensity: Intensity;
+  setting: string[];
+  allAgesSafe: boolean;
+  physical?: boolean;
+  playerSlots: number;
+}
+
+// State
+let allPrompts: Prompt[] = [];
+let filteredPool: Prompt[] = [];
+let usedIds = new Set<string>();
+let activeFilterRules = { fallbackLevel: 0 };
+let currentPrompt: Prompt | null = null;
+let customPrompts: Prompt[] = [];
+
+let darkMode = false;
+let soundOn = false;
+const sound = createSoundKit();
+
+// Elements
+const form = document.getElementById('tod-setup-form') as HTMLFormElement;
+const screenSetup = document.getElementById('tod-screen-setup')!;
+const screenGame = document.getElementById('tod-screen-game')!;
+const ageRadios = document.querySelectorAll('input[name="age"]');
+const chkFlirty = document.getElementById('chk-flirty') as HTMLInputElement;
+const lblFlirty = document.getElementById('lbl-tone-flirty')!;
+const chkWild = document.getElementById('chk-wild') as HTMLInputElement;
+const lblWild = document.getElementById('lbl-int-wild')!;
+const namesList = document.getElementById('namesList') as HTMLTextAreaElement;
+
+const card = document.getElementById('tod-prompt-card')!;
+const cardType = document.getElementById('tod-prompt-type')!;
+const cardText = document.getElementById('tod-prompt-text')!;
+const cardMeta = document.getElementById('tod-prompt-meta')!;
+const statsBar = document.getElementById('tod-pool-stats')!;
+
+let players: string[] = [];
+
+// Init
+function init() {
+  // Load seed data
+  const dataNode = document.getElementById('tod-seed-data');
+  if (dataNode) {
+    const parsed = JSON.parse(dataNode.textContent || '{}');
+    if (parsed.prompts) allPrompts = parsed.prompts;
+  }
+
+  // Load preferences
+  try {
+    const prefs = JSON.parse(localStorage.getItem('tod:prefs') || '{}');
+    if (typeof prefs.darkMode === 'boolean') darkMode = prefs.darkMode;
+    if (typeof prefs.soundOn === 'boolean') soundOn = prefs.soundOn;
+  } catch {}
+  applyPrefs();
+
+  // Age gating logic
+  ageRadios.forEach(r => r.addEventListener('change', updateAgeGating));
+  updateAgeGating();
+
+  // Setup form submit
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    startGame();
+  });
+
+  // Game buttons
+  document.getElementById('btn-draw-truth')!.addEventListener('click', () => drawPrompt('truth'));
+  document.getElementById('btn-draw-dare')!.addEventListener('click', () => drawPrompt('dare'));
+  document.getElementById('btn-draw-random')!.addEventListener('click', () => drawPrompt());
+  document.getElementById('btn-reroll')!.addEventListener('click', reroll);
+  document.getElementById('btn-back-setup')!.addEventListener('click', () => {
+    screenGame.classList.add('tod-hidden');
+    screenSetup.classList.remove('tod-hidden');
+  });
+
+  // Header toggles
+  document.getElementById('tod-dark-btn')!.addEventListener('click', () => {
+    darkMode = !darkMode;
+    localStorage.setItem('tod:prefs', JSON.stringify({ darkMode, soundOn }));
+    applyPrefs();
+  });
+  document.getElementById('tod-sound-btn')!.addEventListener('click', () => {
+    soundOn = !soundOn;
+    if (soundOn) sound.unlock();
+    localStorage.setItem('tod:prefs', JSON.stringify({ darkMode, soundOn }));
+    applyPrefs();
+    showToast(soundOn ? 'Sound on' : 'Sound off');
+  });
+
+  // Modal logic
+  const addModal = document.getElementById('tod-add-modal')!;
+  document.getElementById('btn-add-prompt')!.addEventListener('click', () => addModal.classList.remove('tod-hidden'));
+  document.getElementById('btn-close-add')!.addEventListener('click', () => addModal.classList.add('tod-hidden'));
+  document.getElementById('tod-add-form')!.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const type = (document.getElementById('add-type') as HTMLSelectElement).value as PromptType;
+    const text = (document.getElementById('add-text') as HTMLTextAreaElement).value.trim();
+    const safe = (document.getElementById('add-safe') as HTMLInputElement).checked;
+    
+    // Count player slots roughly
+    const pCount = (text.match(/\{player\}/g) || []).length + (text.match(/\{player2\}/g) || []).length;
+    
+    const newPrompt: Prompt = {
+      id: 'custom-' + Date.now(),
+      type,
+      text,
+      who: ['friends','couple','family','classmates','coworkers'],
+      setting: ['any'],
+      tone: ['funny','chill','deep','chaotic','flirty','embarrassing'],
+      intensity: 'mild', // Treat custom as fitting any intensity
+      allAgesSafe: safe,
+      physical: false,
+      playerSlots: Math.min(2, pCount)
+    };
+    customPrompts.push(newPrompt);
+    addModal.classList.add('tod-hidden');
+    (document.getElementById('add-text') as HTMLTextAreaElement).value = '';
+    
+    // Rebuild pool so it's instantly available
+    buildPool();
+    showToast('Custom prompt added!');
+  });
+}
+
+function applyPrefs() {
+  document.getElementById('tod-root')!.classList.toggle('tod-dark', darkMode);
+  document.getElementById('tod-dark-icon')!.textContent = darkMode ? '☀️' : '🌙';
+  document.getElementById('tod-sound-icon')!.textContent = soundOn ? '🔊' : '🔇';
+  sound.setMuted(!soundOn);
+}
+
+function showToast(msg: string) {
+  const el = document.getElementById('tod-toast')!;
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function playPop() {
+  if (soundOn) {
+    sound.setMuted(false);
+    sound.tick();
+    sound.setMuted(true);
+  }
+}
+
+// Age gating: physically disable Flirty and Wild if All Ages is selected
+function updateAgeGating() {
+  const isAllAges = (document.querySelector('input[name="age"]:checked') as HTMLInputElement).value === 'all';
+  if (isAllAges) {
+    chkFlirty.checked = false;
+    chkFlirty.disabled = true;
+    lblFlirty.classList.add('disabled');
+    
+    if (chkWild.checked) {
+      (document.querySelector('input[name="intensity"][value="medium"]') as HTMLInputElement).checked = true;
+    }
+    chkWild.disabled = true;
+    lblWild.classList.add('disabled');
+  } else {
+    chkFlirty.disabled = false;
+    lblFlirty.classList.remove('disabled');
+    chkWild.disabled = false;
+    lblWild.classList.remove('disabled');
+  }
+}
+
+function parsePlayers() {
+  const raw = namesList.value;
+  players = raw.split(/[\n,]/).map(n => n.trim()).filter(n => n.length > 0);
+  players = [...new Set(players)]; // unique
+}
+
+let activeConfig: any = {};
+
+function startGame() {
+  parsePlayers();
+  
+  const formData = new FormData(form);
+  activeConfig = {
+    age: formData.get('age'),
+    who: formData.get('who'),
+    setting: formData.get('setting'),
+    tones: formData.getAll('tone'),
+    intensity: formData.get('intensity')
+  };
+
+  if (activeConfig.tones.length === 0) {
+    showToast('Please select at least one vibe/tone!');
+    return;
+  }
+
+  activeFilterRules.fallbackLevel = 0;
+  buildPool();
+
+  screenSetup.classList.add('tod-hidden');
+  screenGame.classList.remove('tod-hidden');
+  
+  // Reset card
+  card.className = 'tod-prompt-card';
+  cardType.textContent = 'Welcome';
+  cardText.innerHTML = players.length > 0 ? `Ready! Player mode active (${players.length} players).<br><span style="font-size:0.6em;color:var(--tod-ink-soft)">Pick Truth, Dare, or Random</span>` : 'Ready! Pick Truth, Dare, or Random to start.';
+  cardMeta.innerHTML = '';
+}
+
+function intensityValue(i: string) {
+  if (i === 'wild') return 3;
+  if (i === 'medium') return 2;
+  return 1;
+}
+
+function buildPool() {
+  const { age, who, setting, tones, intensity } = activeConfig;
+  const isAllAges = age === 'all';
+  const targetInt = intensityValue(intensity as string);
+
+  const fullSet = [...allPrompts, ...customPrompts];
+
+  filteredPool = fullSet.filter(p => {
+    // 1. Age check (HARD REQUIREMENT, never dropped)
+    if (isAllAges && !p.allAgesSafe) return false;
+
+    // 2. Physical check for online (HARD REQUIREMENT, never dropped)
+    if (setting === 'online' && p.type === 'dare' && p.physical) return false;
+    
+    // 3. Player slots check (HARD REQUIREMENT, never dropped)
+    if (p.playerSlots > players.length) return false;
+
+    // Fallback level 0: All constraints apply
+    // Fallback level 1: Drop Setting constraint
+    // Fallback level 2: Drop Setting and Tone constraints
+    // Fallback level 3: Drop Setting, Tone, and Who constraints (only intensity/safety applies)
+
+    if (activeFilterRules.fallbackLevel < 3) {
+      if (!p.who.includes(who as string)) return false;
+    }
+    
+    if (activeFilterRules.fallbackLevel < 1) {
+      if (!p.setting.includes('any') && !p.setting.includes(setting as string)) return false;
+    }
+
+    if (activeFilterRules.fallbackLevel < 2) {
+      const toneOverlap = p.tone.some(t => tones.includes(t));
+      if (!toneOverlap) return false;
+    }
+
+    // Intensity: must be <= selected intensity
+    if (intensityValue(p.intensity) > targetInt) return false;
+
+    return true;
+  });
+
+  if (filteredPool.length === 0 && activeFilterRules.fallbackLevel < 3) {
+    activeFilterRules.fallbackLevel++;
+    let msg = '';
+    if (activeFilterRules.fallbackLevel === 1) msg = "Not enough prompts. Broadening settings...";
+    if (activeFilterRules.fallbackLevel === 2) msg = "Still scarce. Broadening vibe/tone...";
+    if (activeFilterRules.fallbackLevel === 3) msg = "Very few exact matches. Showing all safe/intensity matches.";
+    showToast(msg);
+    buildPool(); // recurse
+  } else {
+    updateStats();
+  }
+}
+
+function updateStats() {
+  statsBar.textContent = `Pool: ${filteredPool.length} prompts (Level ${activeFilterRules.fallbackLevel} filter)`;
+}
+
+function substitutePlayers(text: string): string {
+  if (players.length === 0) return text;
+  
+  const needed = (text.match(/\{player\}/g) || []).length + (text.match(/\{player2\}/g) || []).length;
+  if (needed === 0) return text;
+
+  // Shuffle players
+  const shuffled = [...players].sort(() => 0.5 - Math.random());
+  
+  let res = text;
+  if (res.includes('{player}')) {
+    res = res.replace(/\{player\}/g, `<strong style="color:var(--tod-brand)">${shuffled[0]}</strong>`);
+  }
+  if (res.includes('{player2}') && shuffled.length > 1) {
+    res = res.replace(/\{player2\}/g, `<strong style="color:var(--tod-brand)">${shuffled[1]}</strong>`);
+  }
+  return res;
+}
+
+function drawPrompt(type?: PromptType, isReroll = false) {
+  playPop();
+
+  // Refill if exhausted
+  if (usedIds.size >= filteredPool.length) {
+    usedIds.clear();
+    showToast('Pool exhausted. Shuffling and repeating!');
+  }
+
+  let candidates = filteredPool.filter(p => !usedIds.has(p.id));
+  if (type) candidates = candidates.filter(p => p.type === type);
+
+  // If no candidates of requested type, just pull from anything available in the pool
+  if (candidates.length === 0) {
+    if (type) showToast(`No unseen ${type}s left! Grabbing anything...`);
+    candidates = filteredPool.filter(p => !usedIds.has(p.id));
+    if (candidates.length === 0) candidates = filteredPool; // total fallback
+  }
+
+  const picked = candidates[Math.floor(Math.random() * candidates.length)];
+  currentPrompt = picked;
+  
+  if (!isReroll) {
+    usedIds.add(picked.id);
+  }
+
+  // Render
+  card.className = `tod-prompt-card type-${picked.type}`;
+  card.classList.remove('anim-pop');
+  void card.offsetWidth; // trigger reflow
+  card.classList.add('anim-pop');
+
+  cardType.textContent = picked.type;
+  cardText.innerHTML = substitutePlayers(picked.text);
+  
+  const intensityEmoji = picked.intensity === 'wild' ? '🔥' : (picked.intensity === 'medium' ? '⚡' : '🌱');
+  cardMeta.innerHTML = `<span class="tod-tag">${intensityEmoji} ${picked.intensity}</span> <span class="tod-tag">${picked.tone.join(', ')}</span>`;
+}
+
+function reroll() {
+  if (!currentPrompt) return;
+  // Try to reroll same type
+  drawPrompt(currentPrompt.type, true);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</Layout>
