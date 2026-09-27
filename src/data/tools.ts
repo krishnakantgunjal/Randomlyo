@@ -119,7 +119,7 @@ export const TOOLS: Record<string, Tool> = {
     name: 'Tic-Tac-Toe',
     slug: 'play/tic-tac-toe',
     url: '/play/tic-tac-toe/',
-    description: 'Classic X vs O — play a friend or challenge the AI.',
+    description: 'Classic X vs O — play a friend or challenge the computer.',
     category: 'play',
     icon: 'game',
     related: ['wordGame', 'diceRoller'],

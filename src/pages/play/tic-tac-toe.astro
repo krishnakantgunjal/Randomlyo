@@ -1,8 +1,8 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 
-const title = 'Tic-Tac-Toe — Play Against a Friend or AI | Randomlyo';
-const description = 'Classic Tic-Tac-Toe with Player vs Player and AI modes (Easy, Medium, Impossible). Customize symbols, track scores, and challenge the unbeatable AI.';
+const title = 'Tic-Tac-Toe — Play Against a Friend or Computer | Randomlyo';
+const description = 'Classic Tic-Tac-Toe with Player vs Player and Computer modes (Easy, Medium, Impossible). Customize symbols, track scores, and challenge the unbeatable Computer.';
 ---
 
 <Layout title={title} description={description}>
@@ -54,7 +54,7 @@ const description = 'Classic Tic-Tac-Toe with Player vs Player and AI modes (Eas
           <button class="ttt-mode-btn" id="btn-pvai" type="button">
             <span class="ttt-mode-btn-icon">🤖</span>
             <span>
-              <span class="ttt-mode-btn-label">Player vs AI</span>
+              <span class="ttt-mode-btn-label">Player vs Computer</span>
               <span class="ttt-mode-btn-sub">Choose your difficulty</span>
             </span>
           </button>
@@ -63,7 +63,7 @@ const description = 'Classic Tic-Tac-Toe with Player vs Player and AI modes (Eas
           <button class="ttt-quick-match-btn" id="btn-quick-match" type="button">
             <span aria-hidden="true">&#9889;</span> Quick Match
           </button>
-          <p class="ttt-quick-desc">Random AI difficulty — jump straight in</p>
+          <p class="ttt-quick-desc">Random Computer difficulty — jump straight in</p>
         </div>
       </div>
     </div>
@@ -71,21 +71,21 @@ const description = 'Classic Tic-Tac-Toe with Player vs Player and AI modes (Eas
     <!-- DIFFICULTY SELECTION -->
     <div class="ttt-screen ttt-hidden" id="ttt-screen-difficulty">
       <div class="ttt-mode-card">
-        <p class="ttt-eyebrow">AI Difficulty</p>
+        <p class="ttt-eyebrow">Computer Difficulty</p>
         <h2 class="ttt-mode-heading">Pick your challenge</h2>
         <div class="ttt-diff-options">
           <button class="ttt-diff-btn" id="btn-easy" type="button" data-diff="easy">
             <span class="ttt-diff-icon">🐣</span>
             <span>
               <div class="ttt-diff-name">Easy</div>
-              <div class="ttt-diff-desc">AI plays mostly random — great for beginners</div>
+              <div class="ttt-diff-desc">Computer plays mostly random — great for beginners</div>
             </span>
           </button>
           <button class="ttt-diff-btn" id="btn-medium" type="button" data-diff="medium">
             <span class="ttt-diff-icon">🧠</span>
             <span>
               <div class="ttt-diff-name">Medium</div>
-              <div class="ttt-diff-desc">AI mixes smart moves with mistakes</div>
+              <div class="ttt-diff-desc">Computer mixes smart moves with mistakes</div>
             </span>
           </button>
           <button class="ttt-diff-btn" id="btn-impossible" type="button" data-diff="impossible">
@@ -571,14 +571,14 @@ function updateTurnUI() {
   ind.dataset.player = currentPlayer;
   sym.textContent = currentPlayer === 'x' ? symbolX : symbolO;
   if (gameOver) { txt.textContent = ''; return; }
-  txt.textContent = (gameMode === 'ai' && currentPlayer === aiPlayer) ? 'AI is thinking…' : 'Your turn';
+  txt.textContent = (gameMode === 'ai' && currentPlayer === aiPlayer) ? 'Computer is thinking…' : 'Your turn';
   document.getElementById('score-x-wrap')!.classList.toggle('ttt-score-active', currentPlayer === 'x' && !gameOver);
   document.getElementById('score-o-wrap')!.classList.toggle('ttt-score-active', currentPlayer === 'o' && !gameOver);
 }
 
 function setBadge() {
   const badge = document.getElementById('ttt-mode-badge')!;
-  badge.textContent = gameMode === 'pvp' ? 'PvP' : difficulty.charAt(0).toUpperCase()+difficulty.slice(1)+' AI';
+  badge.textContent = gameMode === 'pvp' ? 'PvP' : difficulty.charAt(0).toUpperCase()+difficulty.slice(1)+' Comp';
 }
 
 // ── Win detection ──
@@ -619,7 +619,7 @@ function showResult(winner: Player|'draw') {
     symEl.textContent = sym;
     symEl.style.color = winner === 'x' ? 'var(--ttt-x-color)' : 'var(--ttt-o-color)';
     const isHuman = gameMode === 'pvp' || winner !== aiPlayer;
-    const label = gameMode === 'pvp' ? `Player ${sym}` : (isHuman ? 'You' : 'AI');
+    const label = gameMode === 'pvp' ? `Player ${sym}` : (isHuman ? 'You' : 'Computer');
     msgEl.innerHTML = `${label} wins! <small>${winner.toUpperCase()} takes the round</small>`;
   }
   show('ttt-result');
