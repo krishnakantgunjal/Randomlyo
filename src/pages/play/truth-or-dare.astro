@@ -363,6 +363,47 @@ const statsBar = document.getElementById('tod-pool-stats')!;
 
 let players: string[] = [];
 
+// CRITICAL: Ensure ListInput's value descriptor doesn't break .value access
+// This fix is essential for player name parsing to work correctly
+window.addEventListener('DOMContentLoaded', () => {
+  // Wait a tiny bit for ListInput to set up its custom value descriptor
+  setTimeout(() => {
+    const namesList = document.getElementById('namesList');
+    if (namesList) {
+      // Remove the custom value descriptor to restore normal .value access
+      const descriptor = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+      if (descriptor && descriptor.get !== undefined && descriptor.set !== undefined) {
+        Object.defineProperty(namesList, 'value', {
+          configurable: true,
+          get: descriptor.get,
+          set: descriptor.set
+        });
+      }
+    }
+  }, 10); // Small delay to ensure ListInput has done its thing
+});
+
+// Alternative approach: Access the hidden textarea directly in parsePlayers
+// This ensures we get the actual value regardless of custom descriptors
+function getNamesListValue() {
+  // Try the direct element first
+  const element = document.getElementById('namesList') as HTMLTextAreaElement;
+  if (element) return element.value;
+
+  // Fallback: search for the ListInput's hidden textarea
+  const hiddenTextarea = document.querySelector<HTMLTextAreaElement>('textarea[data-list-value]');
+  if (hiddenTextarea) return hiddenTextarea.value;
+
+  return '';
+}
+
+// Replace the parsePlayers function to use getNamesListValue()
+function parsePlayers() {
+  const raw = getNamesListValue();
+  players = raw.split(/[\n,]/).map(n => n.trim()).filter(n => n.length > 0);
+  players = [...new Set(players)]; // unique
+}
+
 // Init
 function init() {
   // Load seed data
