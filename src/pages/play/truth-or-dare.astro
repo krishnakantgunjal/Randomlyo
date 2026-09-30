@@ -533,12 +533,6 @@ function updateAgeGating() {
   }
 }
 
-function parsePlayers() {
-  const raw = namesList.value;
-  players = raw.split(/[\n,]/).map(n => n.trim()).filter(n => n.length > 0);
-  players = [...new Set(players)]; // unique
-}
-
 let activeConfig: any = {};
 
 function startGame() {
