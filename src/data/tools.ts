@@ -124,6 +124,16 @@ export const TOOLS: Record<string, Tool> = {
     icon: 'game',
     related: ['wordGame', 'diceRoller'],
   },
+  spinTheBottle: {
+    id: 'spinTheBottle',
+    name: 'Spin the Bottle',
+    slug: 'play/spin-the-bottle',
+    url: '/play/spin-the-bottle/',
+    description: 'Spin a bottle to randomly pick a player from the circle.',
+    category: 'play',
+    icon: 'people',
+    related: ['randomNamePicker', 'whoGoesFirst'],
+  },
 };
 
 export const TOOL_CATEGORIES = {
@@ -140,7 +150,7 @@ export const TOOL_CATEGORIES = {
   play: {
     name: 'PLAY & WIN',
     description: 'Randomize teams, brackets and dice rolls.',
-    tools: [TOOLS.randomTeamGenerator, TOOLS.tournamentDraw, TOOLS.diceRoller, TOOLS.wordGame, TOOLS.ticTacToe],
+    tools: [TOOLS.randomTeamGenerator, TOOLS.tournamentDraw, TOOLS.diceRoller, TOOLS.wordGame, TOOLS.ticTacToe, TOOLS.spinTheBottle],
   },
 };
 

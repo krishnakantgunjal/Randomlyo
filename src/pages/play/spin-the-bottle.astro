@@ -1,0 +1,1225 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ListInput from '../../components/ListInput.astro';
+
+const title = 'Spin the Bottle - Random Player Picker | Randomlyo';
+const description = 'Arrange players in a circle and spin the bottle to pick someone at random. Perfect for games and group activities.';
+---
+
+<Layout title={title} description={description}>
+<div class="stb-root" id="stb-root">
+
+  <!-- HEADER -->
+  <header class="stb-header">
+    <div class="stb-header-inner">
+      <a href="/#tools" class="stb-back-link" aria-label="Back to all tools">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Tools
+      </a>
+      <h1 class="stb-title">Spin the Bottle</h1>
+      <div class="stb-controls" role="toolbar" aria-label="Game controls">
+        <button id="stb-sound-btn" type="button" class="stb-icon-btn" aria-pressed="false" aria-label="Turn sound on" title="Sound is off">
+          <span id="stb-sound-icon" aria-hidden="true">🔇</span>
+        </button>
+        <button id="stb-theme-btn" type="button" class="stb-icon-btn" aria-pressed="false" aria-label="Switch to dark mode" title="Light mode">
+          <span id="stb-theme-icon" aria-hidden="true">🌙</span>
+        </button>
+      </div>
+    </div>
+    <div id="stb-toast" class="stb-toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  </header>
+
+  <main class="stb-main">
+    <!-- SETUP SCREEN -->
+    <div class="stb-screen" id="stb-screen-setup">
+      <div class="stb-setup-card">
+        <p class="stb-eyebrow">Who's playing?</p>
+        <h2 class="stb-setup-heading">Add the players</h2>
+        <p class="stb-setup-sub">Enter 2–20 player names, then press <strong>Start Game</strong>.</p>
+
+        <div class="stb-input-wrap">
+          <label for="stb-players-list" class="sr-only">Player names</label>
+          <ListInput
+            id="stb-players-list"
+            name="stb-players-list"
+            defaultValue="Alice, Bob, Charlie, Diana"
+            placeholder="Alice, Bob, Charlie…"
+            class="stb-list-input"
+          />
+        </div>
+
+        <div class="stb-options-row">
+          <label class="stb-toggle-label" for="stb-remove-toggle">
+            <input type="checkbox" id="stb-remove-toggle" class="stb-checkbox" />
+            <span class="stb-toggle-track" aria-hidden="true"></span>
+            Remove player after selection
+          </label>
+          <p class="stb-options-hint">Ensures everyone gets picked before repeating.</p>
+        </div>
+
+        <div id="stb-setup-error" class="stb-error hidden" role="alert"></div>
+
+        <button id="stb-start-btn" type="button" class="stb-primary-btn">
+          Start Game <span aria-hidden="true">&#x2192;</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div class="stb-screen stb-hidden" id="stb-screen-game">
+      <div class="stb-game-layout">
+
+        <!-- Circle arena -->
+        <div class="stb-arena-wrap">
+          <div class="stb-arena" id="stb-arena" aria-label="Player circle">
+
+            <!-- Player chips positioned around the circle — injected by JS -->
+            <div id="stb-player-ring" aria-live="polite"></div>
+
+            <!-- 3D Bottle in centre -->
+            <div class="stb-bottle-scene" id="stb-bottle-scene">
+              <!--
+                GEOMETRY CONTRACT
+                The bottle SVG is drawn so the NECK points UP (toward 12 o'clock).
+                BOTTLE_BASE_ANGLE = 0: when CSS rotateZ = 0 deg, neck points to top.
+                Player 0 sits at top: playerAngle(0) = -90 + (360/n)*0 = -90 deg CSS.
+                finalRotation = FULL_SPINS_DEG + targetPlayerAngle - BOTTLE_BASE_ANGLE
+              -->
+              <div class="stb-bottle-3d" id="stb-bottle-3d">
+                <!-- Bottle SVG: neck points UP (negative Y = top of SVG viewport) -->
+                <svg
+                  class="stb-bottle-svg"
+                  viewBox="0 0 60 160"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <!-- Bottle neck tip (top — the pointing end) -->
+                  <rect x="23" y="0" width="14" height="8" rx="3" fill="url(#bottleGrad)"/>
+                  <!-- Neck ring -->
+                  <rect x="20" y="8" width="20" height="6" rx="3" fill="#7e93eb"/>
+                  <!-- Neck body -->
+                  <rect x="22" y="14" width="16" height="30" rx="2" fill="url(#bottleGrad)"/>
+                  <!-- Shoulder -->
+                  <path d="M22 44 Q18 58 14 70 L46 70 Q42 58 38 44 Z" fill="url(#bottleGrad)"/>
+                  <!-- Body -->
+                  <rect x="12" y="70" width="36" height="72" rx="8" fill="url(#bottleGrad)"/>
+                  <!-- Bottom cap -->
+                  <rect x="12" y="136" width="36" height="12" rx="6" fill="#56627a"/>
+                  <!-- Glass highlight -->
+                  <rect x="17" y="72" width="8" height="60" rx="4" fill="rgba(255,255,255,0.18)"/>
+                  <!-- Label area -->
+                  <rect x="16" y="84" width="28" height="42" rx="5" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+                  <!-- Label text lines -->
+                  <rect x="20" y="97" width="20" height="2.5" rx="1.2" fill="rgba(255,255,255,0.5)"/>
+                  <rect x="21" y="103" width="18" height="2" rx="1" fill="rgba(255,255,255,0.35)"/>
+                  <rect x="22" y="108" width="16" height="2" rx="1" fill="rgba(255,255,255,0.3)"/>
+                  <!-- Neck tip dot (marks the pointing end) -->
+                  <circle cx="30" cy="3" r="3.5" fill="#fff" opacity="0.9"/>
+                  <defs>
+                    <linearGradient id="bottleGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stop-color="#4a5f9c"/>
+                      <stop offset="40%" stop-color="#7e93eb"/>
+                      <stop offset="100%" stop-color="#3a4d7a"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Spin button below arena -->
+          <button id="stb-spin-btn" type="button" class="stb-spin-btn" disabled>
+            Spin the Bottle
+          </button>
+          <button id="stb-reset-btn" type="button" class="stb-reset-btn">
+            &#x2190; Change Players
+          </button>
+        </div>
+
+        <!-- Result panel -->
+        <div class="stb-result-panel" id="stb-result-panel">
+          <div id="stb-result-empty" class="stb-result-empty">
+            <p class="stb-result-big-icon" aria-hidden="true">&#x1F37E;</p>
+            <p class="stb-result-hint">Spin the bottle to pick a player!</p>
+          </div>
+          <div id="stb-result-content" class="stb-result-content hidden">
+            <p class="stb-eyebrow">The bottle chose&hellip;</p>
+            <p id="stb-winner-name" class="stb-winner-name"></p>
+            <p id="stb-players-left" class="stb-players-left"></p>
+            <div class="stb-result-actions">
+              <button id="stb-spin-again-btn" type="button" class="stb-primary-btn">Spin Again</button>
+              <button id="stb-new-game-btn" type="button" class="stb-secondary-btn">New Game</button>
+            </div>
+          </div>
+          <div id="stb-all-picked" class="stb-all-picked hidden">
+            <p class="stb-result-big-icon" aria-hidden="true">&#x1F389;</p>
+            <p class="stb-all-picked-msg">Everyone's been picked!</p>
+            <button id="stb-restart-btn" type="button" class="stb-primary-btn">Start Over</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+</Layout>
+
+<script>
+  import { burstConfetti, createSoundKit } from '../../lib/effects';
+  import { getRandomInt } from '../../lib/random';
+  import { validateList } from '../../lib/utils';
+
+  /* ─────────────────────────────────────────────
+     DOM refs
+  ───────────────────────────────────────────── */
+  const root        = document.getElementById('stb-root')!;
+  const screenSetup = document.getElementById('stb-screen-setup')!;
+  const screenGame  = document.getElementById('stb-screen-game')!;
+  const playersList = document.getElementById('stb-players-list') as HTMLTextAreaElement;
+  const removeTgl   = document.getElementById('stb-remove-toggle') as HTMLInputElement;
+  const setupError  = document.getElementById('stb-setup-error')!;
+  const startBtn    = document.getElementById('stb-start-btn')!;
+  const arena       = document.getElementById('stb-arena')!;
+  const playerRing  = document.getElementById('stb-player-ring')!;
+  const bottle3d    = document.getElementById('stb-bottle-3d')!;
+  const spinBtn     = document.getElementById('stb-spin-btn') as HTMLButtonElement;
+  const resetBtn    = document.getElementById('stb-reset-btn')!;
+  const resultEmpty = document.getElementById('stb-result-empty')!;
+  const resultContent = document.getElementById('stb-result-content')!;
+  const allPickedEl = document.getElementById('stb-all-picked')!;
+  const winnerName  = document.getElementById('stb-winner-name')!;
+  const playersLeft = document.getElementById('stb-players-left')!;
+  const spinAgainBtn = document.getElementById('stb-spin-again-btn') as HTMLButtonElement;
+  const newGameBtn  = document.getElementById('stb-new-game-btn')!;
+  const restartBtn  = document.getElementById('stb-restart-btn')!;
+  const toastEl     = document.getElementById('stb-toast')!;
+  const soundBtn    = document.getElementById('stb-sound-btn')!;
+  const soundIconEl = document.getElementById('stb-sound-icon')!;
+  const themeBtn    = document.getElementById('stb-theme-btn')!;
+  const themeIconEl = document.getElementById('stb-theme-icon')!;
+
+  /* ─────────────────────────────────────────────
+     State
+  ───────────────────────────────────────────── */
+  let players: string[]    = [];
+  let remaining: string[]  = [];
+  let removeMode           = false;
+  let spinning             = false;
+
+  /**
+   * currentBottleAngle tracks the accumulated CSS rotateZ in degrees.
+   * It grows monotonically (never wraps) so each successive spin always
+   * continues forward from where the bottle last rested.
+   */
+  let currentBottleAngle = 0;
+
+  const MIN_PLAYERS = 2;
+  const MAX_PLAYERS = 20;
+
+  /* ─────────────────────────────────────────────
+     ANGLE GEOMETRY  (critical — read before editing)
+     ─────────────────────────────────────────────
+     Player i sits at angle:
+       playerAngleDeg(i, n) = -90 + (360 / n) * i   [CSS degrees]
+       i = 0  →  -90° (top / 12 o'clock)
+       i = 1, n=4  →  0° (right / 3 o'clock)
+       etc.
+
+     Bottle base (unrotated artwork):
+       BOTTLE_BASE_ANGLE = 0
+       Meaning: at CSS rotateZ(0°) the SVG neck points UP = toward top of page
+       = same direction as playerAngleDeg(0, n) = -90° … but wait, shouldn't
+         that be -90 not 0?
+
+     Reconciliation: CSS rotateZ is measured from the Y axis (top) clockwise.
+       rotateZ(0°)   → neck at top  (effectively -90° in math / unit-circle coords)
+       rotateZ(90°)  → neck at right
+       rotateZ(180°) → neck at bottom
+       rotateZ(270°) → neck at left
+
+     playerAngleDeg uses CSS/screen convention (top = -90°):
+       i=0 → -90°  (top)     → the bottle at rotateZ(-90°) points there
+       i=1 with n=4 → 0°     → the bottle at rotateZ(0°)   points there
+
+     So BOTTLE_BASE_ANGLE must equal the CSS angle where the neck points to
+     the 12-o'clock position: rotateZ(-90°) ≡ bottle neck at top.
+     BUT our SVG is drawn so neck points UP = rotateZ(0°) puts neck at top.
+     Therefore BOTTLE_BASE_ANGLE = -90 (the CSS angle of the unrotated neck).
+
+     Correction applied here:
+       BOTTLE_BASE_ANGLE = -90
+
+     finalRotation = currentBottleAngle + FULL_SPINS_DEG
+                   + (targetPlayerAngle - BOTTLE_BASE_ANGLE) normalised forward
+
+     Verification:
+       At finalRotation, the bottle neck is at CSS angle:
+         neckAngle = (BOTTLE_BASE_ANGLE + finalRotation) mod 360
+       The selected player is at:
+         playerAngleDeg(selectedIdx, n)   (mod 360, normalised to [0,360))
+       These two must match.
+  ───────────────────────────────────────────── */
+
+  /**
+   * BOTTLE_BASE_ANGLE: the CSS rotateZ angle at which the SVG neck points
+   * to the top of the page (12 o'clock).
+   *
+   * Our SVG is drawn neck-up, so rotateZ(0°) puts the neck at the top.
+   * However, our player angle formula gives -90° for "top":
+   *   playerAngleDeg(0, n) = -90
+   * So the bottle at rotateZ(0°) (neck at top) should correspond to -90° in
+   * player-angle space. Therefore BOTTLE_BASE_ANGLE = -90.
+   *
+   * In plain English: the bottle's "zero" is 90° behind the player-angle "zero".
+   */
+  const BOTTLE_BASE_ANGLE = -90; // degrees (CSS)
+
+  function playerAngleDeg(index: number, total: number): number {
+    // Player 0 at top = -90°, players evenly spaced clockwise.
+    return -90 + (360 / total) * index;
+  }
+
+  /* ─────────────────────────────────────────────
+     Sound (off by default)
+  ───────────────────────────────────────────── */
+  const SOUND_KEY = 'randomlyo:stb-sound';
+  const sound = createSoundKit();
+  let soundMuted = true;
+
+  try { soundMuted = localStorage.getItem(SOUND_KEY) !== 'on'; } catch { /* */ }
+  applySound(soundMuted);
+
+  function applySound(muted: boolean) {
+    soundMuted = muted;
+    sound.setMuted(muted);
+    soundIconEl.textContent = muted ? '🔇' : '🔊';
+    soundBtn.setAttribute('aria-pressed', String(!muted));
+    soundBtn.setAttribute('aria-label', muted ? 'Turn sound on' : 'Turn sound off');
+    soundBtn.title = muted ? 'Sound is off' : 'Sound is on';
+  }
+
+  soundBtn.addEventListener('click', () => {
+    const next = !soundMuted;
+    applySound(next);
+    if (!next) { sound.unlock(); sound.chime(); }
+    try { localStorage.setItem(SOUND_KEY, next ? 'on' : 'off'); } catch { /* */ }
+  });
+
+  /* ─────────────────────────────────────────────
+     Dark/light theme
+  ───────────────────────────────────────────── */
+  const THEME_KEY = 'randomlyo:stb-theme';
+  let darkMode = false;
+
+  try { darkMode = localStorage.getItem(THEME_KEY) === 'dark'; } catch { /* */ }
+  applyTheme(darkMode);
+
+  function applyTheme(dark: boolean) {
+    darkMode = dark;
+    root.classList.toggle('stb-dark', dark);
+    themeIconEl.textContent = dark ? '☀️' : '🌙';
+    themeBtn.setAttribute('aria-pressed', String(dark));
+    themeBtn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    themeBtn.title = dark ? 'Dark mode' : 'Light mode';
+  }
+
+  themeBtn.addEventListener('click', () => {
+    applyTheme(!darkMode);
+    try { localStorage.setItem(THEME_KEY, darkMode ? 'dark' : 'light'); } catch { /* */ }
+  });
+
+  /* ─────────────────────────────────────────────
+     Toast
+  ───────────────────────────────────────────── */
+  let toastTimer = 0;
+  function showToast(msg: string) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('stb-toast-show');
+    clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => toastEl.classList.remove('stb-toast-show'), 2800);
+  }
+
+  /* ─────────────────────────────────────────────
+     Setup → Game
+  ───────────────────────────────────────────── */
+  startBtn.addEventListener('click', startGame);
+
+  function startGame() {
+    const validation = validateList(playersList.value);
+    if (!validation.valid) {
+      setupError.textContent = validation.error || 'Add at least 2 players.';
+      setupError.classList.remove('hidden');
+      return;
+    }
+    const names = validation.items.slice(0, MAX_PLAYERS);
+    if (names.length < MIN_PLAYERS) {
+      setupError.textContent = `Add at least ${MIN_PLAYERS} players to play.`;
+      setupError.classList.remove('hidden');
+      return;
+    }
+    setupError.classList.add('hidden');
+    players   = names;
+    remaining = [...players];
+    removeMode = removeTgl.checked;
+    currentBottleAngle = 0;
+    bottle3d.style.transform = 'rotateZ(0deg)';
+
+    screenSetup.classList.add('stb-hidden');
+    screenGame.classList.remove('stb-hidden');
+
+    buildPlayerRing();
+    showResultEmpty();
+    spinBtn.disabled = false;
+  }
+
+  /* ─────────────────────────────────────────────
+     Player ring
+  ───────────────────────────────────────────── */
+  function buildPlayerRing() {
+    playerRing.innerHTML = '';
+
+    const active = removeMode ? remaining : players;
+    const total  = active.length;
+    if (total === 0) return;
+
+    const arenaSize  = arena.clientWidth || 480;
+    // Shrink ring radius for more players so chips don't overlap
+    const baseRatio  = total <= 6 ? 0.41 : total <= 12 ? 0.40 : 0.38;
+    const ringRadius = Math.min(arenaSize * baseRatio, 210);
+
+    active.forEach((name, i) => {
+      const angleDeg = playerAngleDeg(i, total);
+      const angleRad = angleDeg * (Math.PI / 180);
+
+      const chip = document.createElement('div');
+      chip.className = 'stb-player-chip';
+      chip.dataset.index = String(i);
+      chip.textContent = name.length > 12 ? name.slice(0, 11) + '\u2026' : name;
+      chip.title = name;
+      chip.setAttribute('aria-label', `Player ${i + 1}: ${name}`);
+
+      // Convert px radius to %-of-arenaSize, centred at 50%.
+      const pct = (ringRadius / arenaSize) * 100;
+      const cx  = 50 + pct * Math.cos(angleRad);
+      const cy  = 50 + pct * Math.sin(angleRad);
+      chip.style.left = `${cx}%`;
+      chip.style.top  = `${cy}%`;
+
+      playerRing.appendChild(chip);
+    });
+  }
+
+  const resizeObs = new ResizeObserver(() => {
+    if (!screenGame.classList.contains('stb-hidden')) buildPlayerRing();
+  });
+  resizeObs.observe(arena);
+
+  /* ─────────────────────────────────────────────
+     Result panel helpers
+  ───────────────────────────────────────────── */
+  function showResultEmpty() {
+    resultEmpty.classList.remove('hidden');
+    resultContent.classList.add('hidden');
+    allPickedEl.classList.add('hidden');
+  }
+
+  function showResultWinner(name: string) {
+    resultEmpty.classList.add('hidden');
+    allPickedEl.classList.add('hidden');
+    resultContent.classList.remove('hidden');
+    winnerName.textContent = name;
+
+    if (removeMode) {
+      const left = remaining.length;
+      playersLeft.textContent =
+        left === 0
+          ? 'Everyone has been picked!'
+          : `${left} player${left === 1 ? '' : 's'} left`;
+    } else {
+      playersLeft.textContent = '';
+    }
+
+    resultContent.classList.remove('result-reveal');
+    void resultContent.offsetWidth;
+    resultContent.classList.add('result-reveal');
+  }
+
+  function showAllPicked() {
+    resultEmpty.classList.add('hidden');
+    resultContent.classList.add('hidden');
+    allPickedEl.classList.remove('hidden');
+  }
+
+  /* ─────────────────────────────────────────────
+     Chip highlights
+  ───────────────────────────────────────────── */
+  function highlightChip(index: number) {
+    playerRing.querySelectorAll('.stb-player-chip').forEach((el, i) => {
+      el.classList.toggle('stb-chip-winner', i === index);
+      el.classList.toggle('stb-chip-dimmed', i !== index);
+    });
+  }
+
+  function clearHighlights() {
+    playerRing.querySelectorAll('.stb-player-chip').forEach(el => {
+      el.classList.remove('stb-chip-winner', 'stb-chip-dimmed');
+    });
+  }
+
+  /* ─────────────────────────────────────────────
+     SPIN  — geometry-critical section
+     ─────────────────────────────────────────────
+     Formula (see ANGLE GEOMETRY block above):
+
+       targetPlayerAngle = playerAngleDeg(winnerIdx, total)
+       finalRotation     = currentBottleAngle
+                           + FULL_SPINS_DEG
+                           + (targetPlayerAngle - BOTTLE_BASE_ANGLE - currentBottleAngle) mod 360
+
+     The mod-360 term gives the smallest non-negative extra rotation
+     needed to land the neck exactly on targetPlayerAngle, beyond the
+     base full-spin landing. This ensures we always spin forward.
+
+     Verification identity (logged after each spin):
+       neckAngle = (BOTTLE_BASE_ANGLE + finalRotation) mod 360  (normalised)
+       playerTarget = targetPlayerAngle mod 360                  (normalised)
+       These must be equal within floating-point tolerance.
+  ───────────────────────────────────────────── */
+
+  const FULL_SPIN_COUNT = 6;
+  const FULL_SPINS_DEG  = FULL_SPIN_COUNT * 360;
+
+  spinBtn.addEventListener('click', doSpin);
+  spinAgainBtn.addEventListener('click', doSpin);
+
+  function doSpin() {
+    if (spinning) return;
+
+    const active = removeMode ? remaining : players;
+    if (active.length < MIN_PLAYERS) {
+      showToast('Need at least 2 players to spin.');
+      return;
+    }
+
+    if (!soundMuted) sound.unlock();
+
+    spinning = true;
+    spinBtn.disabled = true;
+    spinAgainBtn.disabled = true;
+    clearHighlights();
+
+    // 1. Pick winner
+    const winnerIdx  = getRandomInt(0, active.length);
+    const winnerNm   = active[winnerIdx];
+    const total      = active.length;
+
+    // 2. Target angle in CSS degrees
+    const targetPlayerAngle = playerAngleDeg(winnerIdx, total);
+
+    // 3. Compute final rotation (see formula above)
+    //    We start from currentBottleAngle + FULL_SPINS_DEG (our "base landing").
+    //    Then find the minimal forward delta to land at targetPlayerAngle.
+    const baseLanding = currentBottleAngle + FULL_SPINS_DEG;
+    // What CSS angle does BOTTLE_BASE_ANGLE + baseLanding correspond to?
+    // We need to go from there to targetPlayerAngle (forward = positive delta).
+    const neckAtBase   = BOTTLE_BASE_ANGLE + baseLanding;
+    const delta = ((targetPlayerAngle - neckAtBase) % 360 + 360) % 360;
+    const finalRotation = baseLanding + delta;
+
+    // 4. Animate
+    const startAngle = currentBottleAngle;
+    const totalDelta = finalRotation - startAngle;
+
+    const DURATION   = 3500; // ms — generous for dramatic effect
+    const WOBBLE_AMP = 5;    // degrees of Y-axis tilt for 3D feel
+    let   startTime: number | null = null;
+
+    const easeOutQuart = (t: number) => 1 - Math.pow(1 - t, 4);
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    let lastTickAngle = startAngle;
+
+    function frame(ts: number) {
+      if (startTime === null) startTime = ts;
+      const elapsed  = ts - startTime;
+      const progress = Math.min(elapsed / DURATION, 1);
+
+      const eased    = easeOutQuart(progress);
+      const curAngle = startAngle + totalDelta * eased;
+
+      // Y-axis wobble: oscillates and fades out toward the end
+      const wobbleFade = 1 - easeOutCubic(progress);
+      const wobble     = Math.sin(progress * Math.PI * 14) * WOBBLE_AMP * wobbleFade;
+
+      bottle3d.style.transform = `rotateZ(${curAngle}deg) rotateY(${wobble}deg)`;
+
+      // Sound tick every ~30 degrees of spin
+      if (!soundMuted) {
+        const tickStep = 30;
+        const prevTick = Math.floor(lastTickAngle / tickStep);
+        const curTick  = Math.floor(curAngle   / tickStep);
+        if (curTick > prevTick) sound.tick();
+      }
+      lastTickAngle = curAngle;
+
+      if (progress < 1) {
+        requestAnimationFrame(frame);
+        return;
+      }
+
+      // ── ANIMATION COMPLETE ──
+
+      // Lock to exact final rotation (no wobble at rest)
+      bottle3d.style.transform = `rotateZ(${finalRotation}deg)`;
+
+      // Normalise currentBottleAngle to [0, 360) for consistent next-spin math
+      currentBottleAngle = ((finalRotation % 360) + 360) % 360;
+
+      // ── VERIFICATION LOG — gated behind DEBUG flag (proven correct, off in prod) ──
+      const DEBUG = false;
+      if (DEBUG) {
+        const norm = (a: number) => ((a % 360) + 360) % 360;
+        const computedAngleUnderBottleTip = norm(BOTTLE_BASE_ANGLE + finalRotation);
+        const expectedPlayerAngle         = norm(targetPlayerAngle);
+        const diff  = Math.abs(computedAngleUnderBottleTip - expectedPlayerAngle);
+        const match = diff < 0.001 || Math.abs(diff - 360) < 0.001;
+        console.log('[SpinTheBottle] Verification:', {
+          selectedPlayerIndex:         winnerIdx,
+          selectedPlayerName:          winnerNm,
+          finalRotationDegrees:        Math.round(finalRotation * 1000) / 1000,
+          computedAngleUnderBottleTip: Math.round(computedAngleUnderBottleTip * 1000) / 1000,
+          expectedPlayerAngle:         Math.round(expectedPlayerAngle * 1000) / 1000,
+          match,
+        });
+      }
+
+      // ── Post-spin ──
+      highlightChip(winnerIdx);
+      showResultWinner(winnerNm);
+      sound.chime();
+      burstConfetti(winnerName, { count: 40, spread: 120, duration: 2000 });
+
+      if (removeMode) {
+        remaining.splice(winnerIdx, 1);
+        if (remaining.length === 0) {
+          setTimeout(() => { showAllPicked(); spinBtn.disabled = true; }, 1200);
+        } else if (remaining.length < MIN_PLAYERS) {
+          setTimeout(() => {
+            buildPlayerRing();
+            showToast('Only 1 player left — start a new game to continue.');
+            spinBtn.disabled = true;
+          }, 800);
+        } else {
+          setTimeout(() => buildPlayerRing(), 800);
+          spinBtn.disabled = false;
+        }
+      } else {
+        spinBtn.disabled = false;
+      }
+
+      spinning = false;
+      spinAgainBtn.disabled = false;
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  /* ─────────────────────────────────────────────
+     Navigation
+  ───────────────────────────────────────────── */
+  function goToSetup() {
+    screenGame.classList.add('stb-hidden');
+    screenSetup.classList.remove('stb-hidden');
+    spinning = false;
+    spinBtn.disabled = false;
+  }
+
+  resetBtn.addEventListener('click', goToSetup);
+  newGameBtn.addEventListener('click', goToSetup);
+
+  restartBtn.addEventListener('click', () => {
+    remaining = [...players];
+    currentBottleAngle = 0;
+    bottle3d.style.transform = 'rotateZ(0deg)';
+    buildPlayerRing();
+    clearHighlights();
+    showResultEmpty();
+    spinBtn.disabled = false;
+    allPickedEl.classList.add('hidden');
+  });
+</script>
+
+<style>
+  /* ─────────────────────────────────────────────
+     CSS custom properties (theming)
+  ───────────────────────────────────────────── */
+  .stb-root {
+    --stb-bg:          #f3f6fc;
+    --stb-surface:     #ffffff;
+    --stb-ink:         #17233f;
+    --stb-ink-soft:    #56627a;
+    --stb-brand:       #aebeff;
+    --stb-brand-deep:  #7e93eb;
+    --stb-line:        #dfe5f0;
+    --stb-wash:        #f3f6fc;
+    --stb-chip-bg:     #eef1fb;
+    --stb-chip-border: #dfe5f0;
+    --stb-winner-glow: rgba(126, 147, 235, 0.55);
+
+    min-height: 100dvh;
+    background: var(--stb-bg);
+    color: var(--stb-ink);
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Dark theme */
+  .stb-root.stb-dark {
+    --stb-bg:          #0e1628;
+    --stb-surface:     #1a2540;
+    --stb-ink:         #e8edf8;
+    --stb-ink-soft:    #8d99bb;
+    --stb-brand:       #7e93eb;
+    --stb-brand-deep:  #aebeff;
+    --stb-line:        #2a3558;
+    --stb-wash:        #1a2540;
+    --stb-chip-bg:     #222f52;
+    --stb-chip-border: #2a3558;
+    --stb-winner-glow: rgba(174, 190, 255, 0.6);
+  }
+
+  /* ─────────────────────────────────────────────
+     Header
+  ───────────────────────────────────────────── */
+  .stb-header {
+    background: var(--stb-surface);
+    border-bottom: 1px solid var(--stb-line);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    transition: background 0.25s, border-color 0.25s;
+  }
+
+  .stb-header-inner {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .stb-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--stb-ink-soft);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .stb-back-link:hover { color: var(--stb-ink); }
+
+  .stb-title {
+    flex: 1;
+    font-size: 1.05rem;
+    font-weight: 800;
+    font-family: "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+    color: var(--stb-ink);
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .stb-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .stb-icon-btn {
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.6rem;
+    border: 1px solid var(--stb-line);
+    background: transparent;
+    color: var(--stb-ink);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .stb-icon-btn:hover  { background: var(--stb-wash); }
+  .stb-icon-btn:active { transform: scale(0.93); }
+
+  .stb-toast {
+    position: absolute;
+    left: 50%;
+    bottom: -2.6rem;
+    transform: translateX(-50%) translateY(6px);
+    background: var(--stb-ink);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.45rem 1rem;
+    border-radius: 1.5rem;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+    transition: opacity 0.22s, transform 0.22s;
+    z-index: 30;
+  }
+  .stb-toast-show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ─────────────────────────────────────────────
+     Screen system
+  ───────────────────────────────────────────── */
+  .stb-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stb-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 2rem 1rem 3rem;
+  }
+
+  .stb-hidden {
+    display: none !important;
+  }
+
+  /* ─────────────────────────────────────────────
+     Setup screen
+  ───────────────────────────────────────────── */
+  .stb-setup-card {
+    width: 100%;
+    max-width: 32rem;
+    background: var(--stb-surface);
+    border: 1px solid var(--stb-line);
+    border-radius: 1.25rem;
+    padding: 2rem 1.75rem 2.25rem;
+    box-shadow: 0 4px 32px rgba(23, 35, 63, 0.07);
+  }
+
+  .stb-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--stb-brand-deep);
+  }
+
+  .stb-setup-heading {
+    margin: 0.45rem 0 0;
+    font-size: 1.55rem;
+    font-family: "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+    color: var(--stb-ink);
+    line-height: 1.2;
+  }
+
+  .stb-setup-sub {
+    margin: 0.5rem 0 0;
+    font-size: 0.85rem;
+    color: var(--stb-ink-soft);
+  }
+
+  .stb-input-wrap {
+    margin-top: 1.25rem;
+  }
+
+  .stb-options-row {
+    margin-top: 1.1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--stb-line);
+  }
+
+  .stb-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--stb-ink);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .stb-checkbox {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .stb-toggle-track {
+    position: relative;
+    display: inline-block;
+    flex-shrink: 0;
+    width: 2.4rem;
+    height: 1.35rem;
+    border-radius: 1rem;
+    background: var(--stb-line);
+    transition: background 0.2s;
+  }
+  .stb-toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 0.18rem;
+    left: 0.18rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .stb-checkbox:checked + .stb-toggle-track {
+    background: var(--stb-brand-deep);
+  }
+  .stb-checkbox:checked + .stb-toggle-track::after {
+    transform: translateX(1.05rem);
+  }
+
+  .stb-options-hint {
+    margin: 0.4rem 0 0 3rem;
+    font-size: 0.75rem;
+    color: var(--stb-ink-soft);
+  }
+
+  .stb-error {
+    margin-top: 0.9rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 0.6rem;
+    border: 1px solid #fca5a5;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: 0.83rem;
+    font-weight: 600;
+  }
+  .hidden { display: none; }
+
+  /* Buttons */
+  .stb-primary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 3rem;
+    padding: 0 1.5rem;
+    border: none;
+    border-radius: 0.85rem;
+    background: var(--stb-ink);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.12s;
+  }
+  .stb-primary-btn:hover  { background: var(--stb-brand-deep); }
+  .stb-primary-btn:active { transform: scale(0.96); }
+  .stb-primary-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .stb-secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 3rem;
+    padding: 0 1.4rem;
+    border: 1.5px solid var(--stb-line);
+    border-radius: 0.85rem;
+    background: var(--stb-surface);
+    color: var(--stb-ink);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.12s;
+  }
+  .stb-secondary-btn:hover {
+    border-color: var(--stb-brand-deep);
+    background: var(--stb-wash);
+  }
+  .stb-secondary-btn:active { transform: scale(0.96); }
+
+  #stb-start-btn { margin-top: 1.5rem; width: 100%; }
+
+  /* ─────────────────────────────────────────────
+     Game layout
+  ───────────────────────────────────────────── */
+  .stb-game-layout {
+    width: 100%;
+    max-width: 68rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  @media (min-width: 900px) {
+    .stb-game-layout {
+      grid-template-columns: 1fr minmax(16rem, 20rem);
+    }
+  }
+
+  /* ─────────────────────────────────────────────
+     Arena
+  ───────────────────────────────────────────── */
+  .stb-arena-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .stb-arena {
+    position: relative;
+    width: min(480px, 90vw);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, var(--stb-surface) 0%, var(--stb-wash) 100%);
+    border: 2px solid var(--stb-line);
+    box-shadow:
+      0 0 0 6px var(--stb-wash),
+      0 0 0 7px var(--stb-line),
+      0 8px 48px rgba(23, 35, 63, 0.1);
+  }
+
+  /* ─────────────────────────────────────────────
+     Player chips
+  ───────────────────────────────────────────── */
+  .stb-player-chip {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    background: var(--stb-chip-bg);
+    border: 1.5px solid var(--stb-chip-border);
+    border-radius: 2rem;
+    padding: 0.28rem 0.7rem;
+    font-size: clamp(0.6rem, 1.8vw, 0.78rem);
+    font-weight: 700;
+    color: var(--stb-ink);
+    white-space: nowrap;
+    max-width: 7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s, transform 0.25s, opacity 0.25s;
+    cursor: default;
+    z-index: 2;
+    user-select: none;
+  }
+
+  .stb-chip-winner {
+    background: var(--stb-brand-deep) !important;
+    border-color: var(--stb-brand-deep) !important;
+    color: #fff !important;
+    box-shadow: 0 0 0 4px var(--stb-winner-glow) !important;
+    transform: translate(-50%, -50%) scale(1.2) !important;
+  }
+
+  .stb-chip-dimmed {
+    opacity: 0.35;
+    transform: translate(-50%, -50%) scale(0.92) !important;
+  }
+
+  /* ─────────────────────────────────────────────
+     3D Bottle
+  ───────────────────────────────────────────── */
+  .stb-bottle-scene {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    perspective: 500px;
+    z-index: 3;
+  }
+
+  .stb-bottle-3d {
+    /*
+     * transform-style: preserve-3d — the Y-axis wobble (rotateY) during spin
+     * renders as genuine 3D depth, giving the bottle a "lifting off the table"
+     * feel, while the primary motion is the flat Z-axis spin.
+     */
+    transform-style: preserve-3d;
+    transform-origin: center center;
+    will-change: transform;
+  }
+
+  .stb-bottle-svg {
+    width: clamp(38px, 8.5vw, 60px);
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 4px 18px rgba(23,35,63,0.28));
+  }
+
+  /* ─────────────────────────────────────────────
+     Spin / Reset buttons
+  ───────────────────────────────────────────── */
+  .stb-spin-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.25rem;
+    padding: 0 2.5rem;
+    border: none;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, var(--stb-brand-deep), #5a72d4);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 800;
+    font-family: "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    box-shadow: 0 4px 20px rgba(126, 147, 235, 0.45);
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+  }
+  .stb-spin-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 28px rgba(126, 147, 235, 0.6);
+  }
+  .stb-spin-btn:active:not(:disabled) { transform: scale(0.96); }
+  .stb-spin-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .stb-reset-btn {
+    background: none;
+    border: none;
+    color: var(--stb-ink-soft);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--stb-line);
+    transition: color 0.15s;
+  }
+  .stb-reset-btn:hover { color: var(--stb-ink); }
+
+  /* ─────────────────────────────────────────────
+     Result panel
+  ───────────────────────────────────────────── */
+  .stb-result-panel {
+    background: var(--stb-surface);
+    border: 1px solid var(--stb-line);
+    border-radius: 1.2rem;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(23,35,63,0.07);
+    min-height: 14rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .stb-result-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .stb-result-big-icon {
+    font-size: 3rem;
+    margin: 0;
+    line-height: 1;
+  }
+
+  .stb-result-hint {
+    font-size: 0.88rem;
+    color: var(--stb-ink-soft);
+    margin: 0;
+  }
+
+  .stb-result-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+  }
+
+  .stb-winner-name {
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: 800;
+    font-family: "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+    color: var(--stb-ink);
+    margin: 0.25rem 0;
+    word-break: break-word;
+  }
+
+  .stb-players-left {
+    font-size: 0.8rem;
+    color: var(--stb-ink-soft);
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .stb-result-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+    margin-top: 0.75rem;
+  }
+
+  .stb-all-picked {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    width: 100%;
+  }
+
+  .stb-all-picked-msg {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--stb-ink);
+    margin: 0;
+  }
+
+  /* ─────────────────────────────────────────────
+     Mobile
+  ───────────────────────────────────────────── */
+  @media (max-width: 899px) {
+    .stb-screen { padding: 1.25rem 0.75rem 2.5rem; }
+    .stb-arena { width: min(380px, 88vw); }
+    .stb-result-panel { width: 100%; max-width: 32rem; }
+  }
+
+  @media (max-width: 480px) {
+    .stb-arena { width: min(310px, 93vw); }
+    .stb-player-chip { font-size: 0.58rem; padding: 0.2rem 0.48rem; max-width: 5rem; }
+  }
+
+  /* ─────────────────────────────────────────────
+     Reduced motion
+  ───────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .stb-bottle-3d,
+    .stb-player-chip,
+    .stb-spin-btn,
+    .stb-icon-btn {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>
