@@ -97,8 +97,6 @@ const description = 'Create a fair single-elimination bracket with random seedin
 
 <script>
   import { validateList } from '../lib/utils';
-  import { jsPDF } from 'jspdf';
-  import html2canvas from 'html2canvas';
   import {
     champion,
     createBracket,
@@ -510,6 +508,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
       await new Promise((r) => setTimeout(r, 50));
       const completeWidth = Math.max(1200, clone.scrollWidth);
       const completeHeight = Math.max(600, clone.scrollHeight);
+      const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(clone, {
         backgroundColor: '#ffffff',
         scale: 2,
@@ -528,6 +527,7 @@ const description = 'Create a fair single-elimination bracket with random seedin
         link.click();
       } else {
         const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = await import('jspdf');
         const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [completeWidth / 2, completeHeight / 2] });
         pdf.addImage(imgData, 'PNG', 0, 0, completeWidth / 2, completeHeight / 2);
         pdf.save('tournament-bracket.pdf');
