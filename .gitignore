@@ -11,3 +11,11 @@ CLAUDE.md
 AGENTS.md
 skills-lock.json
 FIXES_COMPLETED.md
+
+# Diagnostic scripts
+verify_*.ts
+verify_*.js
+trace-*.ts
+test_*.js
+debug-*.js
+.claude/worktrees/
