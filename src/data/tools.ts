@@ -124,16 +124,6 @@ export const TOOLS: Record<string, Tool> = {
     icon: 'game',
     related: ['wordGame', 'diceRoller'],
   },
-  truthOrDare: {
-    id: 'truthOrDare',
-    name: 'Truth or Dare',
-    slug: 'play/truth-or-dare',
-    url: '/play/truth-or-dare/',
-    description: 'Play Truth or Dare tailored to your group, setting, and vibe.',
-    category: 'play',
-    icon: 'game',
-    related: ['randomNamePicker', 'diceRoller'],
-  },
 };
 
 export const TOOL_CATEGORIES = {
@@ -150,7 +140,7 @@ export const TOOL_CATEGORIES = {
   play: {
     name: 'PLAY & WIN',
     description: 'Randomize teams, brackets and dice rolls.',
-    tools: [TOOLS.randomTeamGenerator, TOOLS.tournamentDraw, TOOLS.diceRoller, TOOLS.wordGame, TOOLS.ticTacToe, TOOLS.truthOrDare],
+    tools: [TOOLS.randomTeamGenerator, TOOLS.tournamentDraw, TOOLS.diceRoller, TOOLS.wordGame, TOOLS.ticTacToe],
   },
 };
 
