@@ -487,16 +487,14 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
        neckAngle = (BOTTLE_BASE_ANGLE + finalRotation) mod 360  (normalised)
        playerTarget = targetPlayerAngle mod 360                  (normalised)
        These must be equal within floating-point tolerance.
-  ───────────────────────────────────────────── */
-
-  const FULL_SPIN_COUNT = 6;
-  const FULL_SPINS_DEG  = FULL_SPIN_COUNT * 360;
-
   spinBtn.addEventListener('click', doSpin);
   spinAgainBtn.addEventListener('click', doSpin);
 
   function doSpin() {
     if (spinning) return;
+
+    const FULL_SPIN_COUNT = getRandomInt(5, 9);
+    const FULL_SPINS_DEG  = FULL_SPIN_COUNT * 360;
 
     const active = removeMode ? remaining : players;
     if (active.length < MIN_PLAYERS) {
@@ -533,12 +531,15 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
     const startAngle = currentBottleAngle;
     const totalDelta = finalRotation - startAngle;
 
-    const DURATION   = 3500; // ms — generous for dramatic effect
-    const WOBBLE_AMP = 5;    // degrees of Y-axis tilt for 3D feel
+    const DURATION = getRandomInt(2500, 4001); // 2.5s to 4.0s
+    const WOBBLE_AMP = 5;
+    const OVERSHOOT = 15; // end-of-spin settle overshoot in degrees
+    const SETTLE_AT = 0.90; // When to start the settle-back
     let   startTime: number | null = null;
 
     const easeOutQuart = (t: number) => 1 - Math.pow(1 - t, 4);
     const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+    const bottleSvg = bottle3d.querySelector('.stb-bottle-svg') as HTMLElement;
 
     let lastTickAngle = startAngle;
 
@@ -547,14 +548,27 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
       const elapsed  = ts - startTime;
       const progress = Math.min(elapsed / DURATION, 1);
 
-      const eased    = easeOutQuart(progress);
-      const curAngle = startAngle + totalDelta * eased;
+      let curAngle = 0;
+      let wobbleFade = 0;
 
-      // Y-axis wobble: oscillates and fades out toward the end
-      const wobbleFade = 1 - easeOutCubic(progress);
-      const wobble     = Math.sin(progress * Math.PI * 14) * WOBBLE_AMP * wobbleFade;
+      if (progress <= SETTLE_AT) {
+        const eased = easeOutQuart(progress / SETTLE_AT);
+        curAngle = startAngle + (totalDelta + OVERSHOOT) * eased;
+        wobbleFade = 1 - easeOutCubic(progress / SETTLE_AT);
+      } else {
+        const t = (progress - SETTLE_AT) / (1 - SETTLE_AT);
+        curAngle = finalRotation + OVERSHOOT * (1 - easeOutCubic(t));
+        wobbleFade = 0;
+      }
 
+      // Y-axis wobble: oscillates and fades out smoothly toward the settle phase
+      const wobble = Math.sin(progress * Math.PI * 14) * WOBBLE_AMP * wobbleFade;
       bottle3d.style.transform = `rotateZ(${curAngle}deg) rotateY(${wobble}deg)`;
+
+      // Grounded shadow effect that shifts dynamically with wobble
+      const shadowX = Math.sin(progress * Math.PI * 14) * 12 * wobbleFade;
+      const shadowY = 4 + Math.abs(wobble) * 2;
+      if (bottleSvg) bottleSvg.style.filter = `drop-shadow(${shadowX}px ${shadowY}px 14px rgba(23,35,63,0.35))`;
 
       // Sound tick every ~30 degrees of spin
       if (!soundMuted) {
@@ -574,6 +588,7 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
 
       // Lock to exact final rotation (no wobble at rest)
       bottle3d.style.transform = `rotateZ(${finalRotation}deg)`;
+      if (bottleSvg) bottleSvg.style.filter = `drop-shadow(0px 4px 14px rgba(23,35,63,0.35))`;
 
       // Normalise currentBottleAngle to [0, 360) for consistent next-spin math
       currentBottleAngle = ((finalRotation % 360) + 360) % 360;
@@ -986,10 +1001,13 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
     flex-direction: column;
     align-items: center;
     gap: 1.25rem;
+    perspective: 1200px;
   }
 
   .stb-arena {
     position: relative;
+    transform: rotateX(12deg);
+    transform-style: preserve-3d;
     width: min(480px, 90vw);
     aspect-ratio: 1;
     border-radius: 50%;
