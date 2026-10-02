@@ -59,7 +59,7 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
           <p class="stb-options-hint">Ensures everyone gets picked before repeating.</p>
         </div>
 
-        <div id="stb-setup-error" class="stb-error hidden" role="alert"></div>
+        <div id="stb-setup-error" class="stb-error stb-hidden" role="alert"></div>
 
         <button id="stb-start-btn" type="button" class="stb-primary-btn">
           Start Game <span aria-hidden="true">&#x2192;</span>
@@ -145,7 +145,7 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
             <p class="stb-result-big-icon" aria-hidden="true">&#x1F37E;</p>
             <p class="stb-result-hint">Spin the bottle to pick a player!</p>
           </div>
-          <div id="stb-result-content" class="stb-result-content hidden">
+          <div id="stb-result-content" class="stb-result-content stb-hidden">
             <p class="stb-eyebrow">The bottle chose&hellip;</p>
             <p id="stb-winner-name" class="stb-winner-name"></p>
             <p id="stb-players-left" class="stb-players-left"></p>
@@ -154,7 +154,7 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
               <button id="stb-new-game-btn" type="button" class="stb-secondary-btn">New Game</button>
             </div>
           </div>
-          <div id="stb-all-picked" class="stb-all-picked hidden">
+          <div id="stb-all-picked" class="stb-all-picked stb-hidden">
             <p class="stb-result-big-icon" aria-hidden="true">&#x1F389;</p>
             <p class="stb-all-picked-msg">Everyone's been picked!</p>
             <button id="stb-restart-btn" type="button" class="stb-primary-btn">Start Over</button>
@@ -351,16 +351,16 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
     const validation = validateList(playersList.value);
     if (!validation.valid) {
       setupError.textContent = validation.error || 'Add at least 2 players.';
-      setupError.classList.remove('hidden');
+      setupError.classList.remove('stb-hidden');
       return;
     }
     const names = validation.items.slice(0, MAX_PLAYERS);
     if (names.length < MIN_PLAYERS) {
       setupError.textContent = `Add at least ${MIN_PLAYERS} players to play.`;
-      setupError.classList.remove('hidden');
+      setupError.classList.remove('stb-hidden');
       return;
     }
-    setupError.classList.add('hidden');
+    setupError.classList.add('stb-hidden');
     players   = names;
     remaining = [...players];
     removeMode = removeTgl.checked;
@@ -421,15 +421,15 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
      Result panel helpers
   ───────────────────────────────────────────── */
   function showResultEmpty() {
-    resultEmpty.classList.remove('hidden');
-    resultContent.classList.add('hidden');
-    allPickedEl.classList.add('hidden');
+    resultEmpty.classList.remove('stb-hidden');
+    resultContent.classList.add('stb-hidden');
+    allPickedEl.classList.add('stb-hidden');
   }
 
   function showResultWinner(name: string) {
-    resultEmpty.classList.add('hidden');
-    allPickedEl.classList.add('hidden');
-    resultContent.classList.remove('hidden');
+    resultEmpty.classList.add('stb-hidden');
+    allPickedEl.classList.add('stb-hidden');
+    resultContent.classList.remove('stb-hidden');
     winnerName.textContent = name;
 
     if (removeMode) {
@@ -448,9 +448,9 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
   }
 
   function showAllPicked() {
-    resultEmpty.classList.add('hidden');
-    resultContent.classList.add('hidden');
-    allPickedEl.classList.remove('hidden');
+    resultEmpty.classList.add('stb-hidden');
+    resultContent.classList.add('stb-hidden');
+    allPickedEl.classList.remove('stb-hidden');
   }
 
   /* ─────────────────────────────────────────────
@@ -663,7 +663,7 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
     clearHighlights();
     showResultEmpty();
     spinBtn.disabled = false;
-    allPickedEl.classList.add('hidden');
+    allPickedEl.classList.add('stb-hidden');
   });
 </script>
 
@@ -924,7 +924,6 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
     font-size: 0.83rem;
     font-weight: 600;
   }
-  .hidden { display: none; }
 
   /* Buttons */
   .stb-primary-btn {
@@ -1022,7 +1021,7 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
   /* ─────────────────────────────────────────────
      Player chips
   ───────────────────────────────────────────── */
-  .stb-player-chip {
+  :global(.stb-player-chip) {
     position: absolute;
     transform: translate(-50%, -50%);
     background: var(--stb-chip-bg);
@@ -1043,7 +1042,7 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
     user-select: none;
   }
 
-  .stb-chip-winner {
+  :global(.stb-chip-winner) {
     background: var(--stb-brand-deep) !important;
     border-color: var(--stb-brand-deep) !important;
     color: #fff !important;
@@ -1051,7 +1050,7 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
     transform: translate(-50%, -50%) scale(1.2) !important;
   }
 
-  .stb-chip-dimmed {
+  :global(.stb-chip-dimmed) {
     opacity: 0.35;
     transform: translate(-50%, -50%) scale(0.92) !important;
   }
