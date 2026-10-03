@@ -29,26 +29,17 @@ import Layout from '../layouts/Layout.astro';
             </label>
           </div>
         </div>
+
         <div class="mb-5">
-          <p class="font-medium mb-2">Region / Origin</p>
-          <div class="grid grid-cols-2 gap-3">
-            <label class="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-              <input type="radio" name="wsww-region" value="" checked class="w-4 h-4 text-blue-600"> 
-              <span class="text-sm">Global (Default)</span>
-            </label>
-            <label class="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-              <input type="radio" name="wsww-region" value="in" class="w-4 h-4 text-blue-600"> 
-              <span class="text-sm">Indian (Bollywood, South)</span>
-            </label>
-            <label class="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-              <input type="radio" name="wsww-region" value="kr" class="w-4 h-4 text-blue-600"> 
-              <span class="text-sm">Korean (K-Drama/Movies)</span>
-            </label>
-            <label class="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-              <input type="radio" name="wsww-region" value="jp" class="w-4 h-4 text-blue-600"> 
-              <span class="text-sm">Japanese (Anime, etc)</span>
-            </label>
-          </div>
+          <p class="font-medium mb-2">Origin / Region</p>
+          <select id="wsww-region" class="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-ink outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-shadow">
+            <option value="">Global (All)</option>
+            <option value="in">Indian (Bollywood, South, etc)</option>
+            <option value="kr">Korean (K-Dramas, K-Movies)</option>
+            <option value="jp">Japanese (Anime, Live Action)</option>
+            <option value="us">Hollywood / US</option>
+            <option value="gb">British</option>
+          </select>
         </div>
 
         <div class="mb-5">
@@ -201,6 +192,7 @@ import Layout from '../layouts/Layout.astro';
   const genresContainer = document.getElementById('wsww-genres-container')!;
   const startBtn = document.getElementById('wsww-start-btn') as HTMLButtonElement;
   const errorEl = document.getElementById('wsww-error')!;
+  const regionSelect = document.getElementById('wsww-region') as HTMLSelectElement;
   
   const typeRadios = document.querySelectorAll<HTMLInputElement>('input[name="wsww-type"]');
   const backBtn = document.getElementById('wsww-back-btn')!;
@@ -472,9 +464,9 @@ import Layout from '../layouts/Layout.astro';
   // Event Listeners
   startBtn.addEventListener('click', async () => {
     const selectedType = document.querySelector<HTMLInputElement>('input[name="wsww-type"]:checked')?.value || 'movies';
-    const selectedRegion = document.querySelector<HTMLInputElement>('input[name="wsww-region"]:checked')?.value || '';
     const checkboxes = document.querySelectorAll<HTMLInputElement>('.genre-checkbox:checked');
     const selectedGenres = Array.from(checkboxes).map(cb => cb.value);
+    const selectedRegion = regionSelect.value;
 
     currentFilters = { type: selectedType, genres: selectedGenres, region: selectedRegion };
     currentBatch = [];
