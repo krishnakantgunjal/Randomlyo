@@ -107,38 +107,59 @@ import Layout from '../layouts/Layout.astro';
     </div>
     
     <!-- Match Screen -->
-    <div id="wsww-match" class="hidden max-w-sm mx-auto text-center" aria-live="polite">
-      <p class="eyebrow text-green-600 mb-6">We have a winner!</p>
+    <div id="wsww-match" class="hidden w-full max-w-md mx-auto" aria-live="polite">
+      <div class="text-center mb-6">
+        <p class="text-xs font-bold text-green-600 uppercase tracking-widest mb-1">We have a winner!</p>
+        <h2 class="text-3xl font-black text-ink">Grab the popcorn</h2>
+      </div>
       
-      <div class="surface p-4 bg-white shadow-xl rounded-xl mb-6 transform transition-all text-left">
-        <div class="relative w-full aspect-[2/3] rounded-lg overflow-hidden shadow-inner mb-4">
-          <img id="wsww-match-poster" src="" alt="Poster" class="w-full h-full object-cover" />
+      <div class="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-2xl overflow-hidden mb-6 border border-gray-100">
+        <!-- Backdrop/Header area -->
+        <div class="relative w-full h-56 bg-gray-900 overflow-hidden isolate">
+           <!-- Blurred background -->
+           <div class="absolute inset-0">
+             <img id="wsww-match-backdrop" src="" alt="" class="w-full h-full object-cover opacity-40 scale-110 blur-md pointer-events-none" />
+           </div>
+           <!-- Gradient overlay to ensure text is readable -->
+           <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent"></div>
+           
+           <!-- Content overlaid on backdrop -->
+           <div class="absolute bottom-0 left-0 w-full p-5 flex gap-4 items-end">
+              <div class="w-28 shadow-xl rounded-lg overflow-hidden border-2 border-white/10 shrink-0 bg-gray-800">
+                <img id="wsww-match-poster" src="" alt="Poster" class="w-full h-auto object-cover aspect-[2/3]" />
+              </div>
+              <div class="flex-1 pb-1">
+                <h3 id="wsww-match-title" class="text-xl font-bold leading-tight mb-1 text-white text-shadow-md"></h3>
+                <div class="flex flex-wrap items-center gap-2 text-sm text-gray-300 font-medium text-shadow-sm">
+                  <span id="wsww-match-year"></span>
+                  <span class="text-gray-500">&bull;</span>
+                  <span class="flex items-center gap-1 text-yellow-400">
+                    <span>&#x2605;</span>
+                    <span id="wsww-match-rating" class="text-white"></span>
+                  </span>
+                  <span id="wsww-match-runtime-dot" class="hidden text-gray-500">&bull;</span>
+                  <span id="wsww-match-runtime" class="hidden text-gray-300"></span>
+                </div>
+              </div>
+           </div>
         </div>
-        <h3 id="wsww-match-title" class="text-2xl font-bold leading-tight mb-2"></h3>
         
-        <div class="flex items-center gap-3 text-sm text-ink-soft mb-3">
-          <span id="wsww-match-year" class="font-medium"></span>
-          <span>&bull;</span>
-          <span class="flex items-center gap-1">
-            <span class="text-yellow-500">&#x2605;</span>
-            <span id="wsww-match-rating"></span>
-          </span>
-          <span id="wsww-match-runtime-dot" class="hidden">&bull;</span>
-          <span id="wsww-match-runtime" class="hidden"></span>
+        <div class="p-5">
+          <p id="wsww-match-overview" class="text-sm text-ink-soft mb-5 leading-relaxed line-clamp-4"></p>
+
+          <!-- Extra Details Grid -->
+          <div id="wsww-match-details" class="grid grid-cols-2 gap-y-3 gap-x-4 text-xs text-ink-soft mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100 hidden">
+          </div>
+
+          <a id="wsww-match-trailer" href="#" target="_blank" rel="noopener noreferrer" class="hidden flex items-center justify-center gap-2 w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-[0_4px_14px_rgba(220,38,38,0.3)]">
+            &#x25B6; Watch Trailer
+          </a>
         </div>
-
-        <p id="wsww-match-overview" class="text-sm text-ink mb-5 leading-relaxed"></p>
-
-        <!-- Extra Details Grid -->
-        <div id="wsww-match-details" class="grid grid-cols-2 gap-3 text-xs text-ink-soft mb-6 bg-gray-50 p-3 rounded-lg border border-gray-100 hidden">
-        </div>
-
-        <a id="wsww-match-trailer" href="#" target="_blank" rel="noopener noreferrer" class="hidden flex items-center justify-center gap-2 w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors mb-2">
-          &#x25B6; Watch Trailer
-        </a>
       </div>
 
-      <button id="wsww-play-again-btn" class="secondary-action w-full">Find something else</button>
+      <button id="wsww-play-again-btn" class="w-full py-3 rounded-xl font-bold bg-white border-2 border-gray-200 text-ink-soft hover:text-ink hover:border-gray-300 hover:bg-gray-50 transition-colors shadow-sm">
+        Find something else
+      </button>
     </div>
 
     </main>
@@ -179,6 +200,7 @@ import Layout from '../layouts/Layout.astro';
   const yesBtn = document.getElementById('wsww-yes-btn')!;
   const playAgainBtn = document.getElementById('wsww-play-again-btn')!;
   
+  const matchBackdropEl = document.getElementById('wsww-match-backdrop') as HTMLImageElement;
   const matchPosterEl = document.getElementById('wsww-match-poster') as HTMLImageElement;
   const matchTitleEl = document.getElementById('wsww-match-title')!;
   const matchYearEl = document.getElementById('wsww-match-year')!;
@@ -359,6 +381,7 @@ import Layout from '../layouts/Layout.astro';
     let posterUrl = item.images?.poster?.[0] || '';
     if (posterUrl && !posterUrl.startsWith('http')) posterUrl = 'https://' + posterUrl;
 
+    matchBackdropEl.src = posterUrl; // Re-use poster as a blurred backdrop
     matchPosterEl.src = posterUrl;
     matchTitleEl.textContent = item.title;
     matchYearEl.textContent = item.year;
