@@ -39,57 +39,61 @@ import ToolLayout from '../components/ToolLayout.astro';
     </div>
 
     <!-- Swipe Screen -->
-    <div id="wsww-swipe" class="hidden max-w-sm mx-auto">
-      <div class="flex justify-between items-center mb-4 px-2">
-        <button id="wsww-back-btn" class="text-sm text-ink-soft hover:text-ink">&#x2190; Change filters</button>
-        <span id="wsww-counter" class="text-sm text-ink-soft font-medium"></span>
+    <div id="wsww-swipe" class="hidden w-full max-w-md mx-auto h-[75vh] min-h-[550px] max-h-[850px] flex flex-col relative">
+      <div class="flex justify-between items-center mb-3 px-2 shrink-0">
+        <button id="wsww-back-btn" class="text-sm font-medium text-ink-soft hover:text-ink">&#x2190; Change filters</button>
+        <span id="wsww-counter" class="text-sm text-ink-soft font-bold tracking-wider"></span>
       </div>
 
-      <div class="surface p-4 relative overflow-hidden bg-white shadow-lg rounded-xl flex flex-col items-center">
+      <div class="relative w-full flex-1 rounded-2xl overflow-hidden shadow-2xl bg-gray-900 border border-gray-800">
+        
         <!-- Loading overlay -->
-        <div id="wsww-loading" class="absolute inset-0 bg-white/90 z-20 flex flex-col items-center justify-center hidden">
-          <div class="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mb-3"></div>
-          <p class="text-sm font-medium">Fetching titles...</p>
+        <div id="wsww-loading" class="absolute inset-0 bg-white/95 backdrop-blur z-20 flex flex-col items-center justify-center hidden">
+          <div class="animate-spin w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
+          <p class="text-sm font-semibold text-ink-soft uppercase tracking-widest">Fetching titles...</p>
         </div>
 
         <!-- End State -->
-        <div id="wsww-end-state" class="absolute inset-0 bg-white z-20 flex flex-col items-center justify-center p-6 text-center hidden">
-          <p class="text-4xl mb-4">&#x1F622;</p>
-          <h3 class="text-xl font-medium mb-2">Out of matches</h3>
-          <p class="text-sm text-ink-soft mb-6">We ran out of popular titles for these filters.</p>
-          <button id="wsww-restart-btn" class="primary-action w-full">Try different filters</button>
+        <div id="wsww-end-state" class="absolute inset-0 bg-white z-20 flex flex-col items-center justify-center p-8 text-center hidden">
+          <p class="text-6xl mb-6">&#x1F622;</p>
+          <h3 class="text-2xl font-bold mb-3 text-ink">Out of matches</h3>
+          <p class="text-base text-ink-soft mb-8">We ran out of popular titles for these filters.</p>
+          <button id="wsww-restart-btn" class="primary-action w-full py-4 text-lg">Try different filters</button>
         </div>
 
         <!-- Card Container -->
-        <div id="wsww-card" class="w-full flex flex-col items-center select-none touch-none">
-          <div class="relative w-full aspect-[2/3] rounded-lg overflow-hidden bg-gray-100 shadow-inner mb-4">
-            <img id="wsww-poster" src="" alt="Poster" class="w-full h-full object-cover pointer-events-none" />
-            <div id="wsww-badge" class="absolute top-2 right-2 bg-black/70 text-white text-xs font-bold px-2 py-1 rounded">MOVIE</div>
-          </div>
+        <div id="wsww-card" class="absolute inset-0 w-full h-full select-none touch-none cursor-grab active:cursor-grabbing origin-bottom bg-black">
+          <img id="wsww-poster" src="" alt="Poster" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-90 transition-opacity" />
           
-          <h3 id="wsww-title" class="text-xl font-bold text-center leading-tight mb-1">Title Here</h3>
+          <div id="wsww-badge" class="absolute top-4 right-4 bg-black/60 backdrop-blur-md text-white text-xs font-black tracking-widest px-3 py-1.5 rounded shadow-lg z-10">MOVIE</div>
           
-          <div class="flex items-center gap-3 text-sm text-ink-soft mb-3">
-            <span id="wsww-year" class="font-medium">2026</span>
-            <span>&bull;</span>
-            <span class="flex items-center gap-1">
-              <span class="text-yellow-500">&#x2605;</span>
-              <span id="wsww-rating">8.5</span>
-            </span>
-          </div>
-          
-          <p id="wsww-overview" class="text-sm text-center text-ink line-clamp-3 mb-6 px-2">Overview goes here</p>
-
-          <!-- Action Buttons -->
-          <div class="flex gap-4 w-full px-2 mt-auto">
-            <button id="wsww-no-btn" class="flex-1 py-3 px-4 rounded-xl border-2 border-red-200 text-red-600 font-bold hover:bg-red-50 transition-colors">
-              &#x2715; Not tonight
-            </button>
-            <button id="wsww-yes-btn" class="flex-1 py-3 px-4 rounded-xl border-2 border-green-500 bg-green-500 text-white font-bold hover:bg-green-600 hover:border-green-600 transition-colors shadow-md">
-              &#x2713; Let's watch this!
-            </button>
+          <!-- Content Overlay (Gradient) -->
+          <div class="absolute inset-x-0 bottom-0 pt-40 pb-6 px-6 bg-gradient-to-t from-black via-black/80 to-transparent flex flex-col text-white pointer-events-none">
+            
+            <h3 id="wsww-title" class="text-3xl font-extrabold leading-tight mb-2 drop-shadow-md">Title Here</h3>
+            
+            <div class="flex items-center gap-3 text-sm text-gray-200 mb-3 font-semibold tracking-wide">
+              <span id="wsww-year">2026</span>
+              <span>&bull;</span>
+              <span class="flex items-center gap-1 text-yellow-400 drop-shadow">
+                <span>&#x2605;</span>
+                <span id="wsww-rating" class="text-white">8.5</span>
+              </span>
+            </div>
+            
+            <p id="wsww-overview" class="text-sm text-gray-300 line-clamp-3 mb-2 leading-relaxed drop-shadow-sm">Overview goes here</p>
           </div>
         </div>
+      </div>
+      
+      <!-- Action Buttons below card -->
+      <div class="flex justify-center gap-8 mt-6 shrink-0 pb-4">
+        <button id="wsww-no-btn" class="flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-red-100 text-red-500 shadow-xl hover:bg-red-50 hover:scale-110 active:scale-95 transition-all text-2xl font-bold">
+          &#x2715;
+        </button>
+        <button id="wsww-yes-btn" class="flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-green-100 text-green-500 shadow-xl hover:bg-green-50 hover:scale-110 active:scale-95 transition-all text-2xl font-bold">
+          &#x2713;
+        </button>
       </div>
     </div>
     
