@@ -116,6 +116,10 @@ import ToolLayout from '../components/ToolLayout.astro';
 
         <p id="wsww-match-overview" class="text-sm text-ink mb-5 leading-relaxed"></p>
 
+        <!-- Extra Details Grid -->
+        <div id="wsww-match-details" class="grid grid-cols-2 gap-3 text-xs text-ink-soft mb-6 bg-gray-50 p-3 rounded-lg border border-gray-100 hidden">
+        </div>
+
         <a id="wsww-match-trailer" href="#" target="_blank" rel="noopener noreferrer" class="hidden flex items-center justify-center gap-2 w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors mb-2">
           &#x25B6; Watch Trailer
         </a>
@@ -168,6 +172,7 @@ import ToolLayout from '../components/ToolLayout.astro';
   const matchRuntimeDot = document.getElementById('wsww-match-runtime-dot')!;
   const matchRuntimeEl = document.getElementById('wsww-match-runtime')!;
   const matchOverviewEl = document.getElementById('wsww-match-overview')!;
+  const matchDetailsEl = document.getElementById('wsww-match-details')!;
   const matchTrailerEl = document.getElementById('wsww-match-trailer') as HTMLAnchorElement;
 
   // State
@@ -346,15 +351,49 @@ import ToolLayout from '../components/ToolLayout.astro';
     matchRatingEl.textContent = item.rating ? item.rating.toFixed(1) : 'NR';
     matchOverviewEl.textContent = item.overview || 'No description available.';
 
-    if (item.runtime) {
-      const hours = Math.floor(item.runtime / 60);
-      const mins = item.runtime % 60;
-      matchRuntimeEl.textContent = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-      matchRuntimeEl.classList.remove('hidden');
-      matchRuntimeDot.classList.remove('hidden');
+    if (currentFilters.type === 'shows') {
+      if (item.runtime) {
+        matchRuntimeEl.textContent = `${item.runtime}m / ep`;
+        matchRuntimeEl.classList.remove('hidden');
+        matchRuntimeDot.classList.remove('hidden');
+      } else {
+        matchRuntimeEl.classList.add('hidden');
+        matchRuntimeDot.classList.add('hidden');
+      }
     } else {
-      matchRuntimeEl.classList.add('hidden');
-      matchRuntimeDot.classList.add('hidden');
+      if (item.runtime) {
+        const hours = Math.floor(item.runtime / 60);
+        const mins = item.runtime % 60;
+        matchRuntimeEl.textContent = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+        matchRuntimeEl.classList.remove('hidden');
+        matchRuntimeDot.classList.remove('hidden');
+      } else {
+        matchRuntimeEl.classList.add('hidden');
+        matchRuntimeDot.classList.add('hidden');
+      }
+    }
+
+    // Build extra metadata grid
+    const details = [];
+    if (item.certification) details.push(`<div class="font-medium">Rating: <span class="text-ink font-normal">${item.certification}</span></div>`);
+    if (item.status) details.push(`<div class="font-medium">Status: <span class="text-ink font-normal capitalize">${item.status}</span></div>`);
+    
+    if (currentFilters.type === 'shows') {
+      if (item.network) details.push(`<div class="font-medium">Network: <span class="text-ink font-normal">${item.network}</span></div>`);
+      if (item.aired_episodes) details.push(`<div class="font-medium">Episodes: <span class="text-ink font-normal">${item.aired_episodes}</span></div>`);
+    }
+
+    if (item.genres && item.genres.length > 0) {
+      // Trakt genres are slug-like but fine to capitalize
+      const formattedGenres = item.genres.map((g: string) => g.replace('-', ' ')).join(', ');
+      details.push(`<div class="font-medium col-span-2">Genres: <span class="text-ink font-normal capitalize">${formattedGenres}</span></div>`);
+    }
+
+    if (details.length > 0) {
+      matchDetailsEl.innerHTML = details.join('');
+      matchDetailsEl.classList.remove('hidden');
+    } else {
+      matchDetailsEl.classList.add('hidden');
     }
 
     if (item.trailer) {
