@@ -39,60 +39,62 @@ import ToolLayout from '../components/ToolLayout.astro';
     </div>
 
     <!-- Swipe Screen -->
-    <div id="wsww-swipe" class="hidden w-full max-w-md mx-auto h-[75vh] min-h-[550px] max-h-[850px] flex flex-col relative">
-      <div class="flex justify-between items-center mb-3 px-2 shrink-0">
+    <div id="wsww-swipe" class="hidden max-w-sm mx-auto flex-col items-center pb-8">
+      <div class="flex justify-between items-center w-full mb-4 px-2">
         <button id="wsww-back-btn" class="text-sm font-medium text-ink-soft hover:text-ink">&#x2190; Change filters</button>
-        <span id="wsww-counter" class="text-sm text-ink-soft font-bold tracking-wider"></span>
+        <span id="wsww-counter" class="text-sm text-ink-soft font-bold"></span>
       </div>
 
-      <div class="relative w-full flex-1 rounded-2xl overflow-hidden shadow-2xl bg-gray-900 border border-gray-800">
+      <!-- The Card Stack Area -->
+      <div class="relative w-full aspect-[2/3] max-h-[65vh] min-h-[450px]">
         
         <!-- Loading overlay -->
-        <div id="wsww-loading" class="absolute inset-0 bg-white/95 backdrop-blur z-20 flex flex-col items-center justify-center hidden">
-          <div class="animate-spin w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
-          <p class="text-sm font-semibold text-ink-soft uppercase tracking-widest">Fetching titles...</p>
+        <div id="wsww-loading" class="absolute inset-0 bg-white/90 z-20 flex flex-col items-center justify-center rounded-2xl hidden">
+          <div class="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mb-3"></div>
+          <p class="text-sm font-medium text-ink-soft">Fetching titles...</p>
         </div>
 
         <!-- End State -->
-        <div id="wsww-end-state" class="absolute inset-0 bg-white z-20 flex flex-col items-center justify-center p-8 text-center hidden">
-          <p class="text-6xl mb-6">&#x1F622;</p>
-          <h3 class="text-2xl font-bold mb-3 text-ink">Out of matches</h3>
-          <p class="text-base text-ink-soft mb-8">We ran out of popular titles for these filters.</p>
-          <button id="wsww-restart-btn" class="primary-action w-full py-4 text-lg">Try different filters</button>
+        <div id="wsww-end-state" class="absolute inset-0 bg-white z-20 flex flex-col items-center justify-center p-6 text-center rounded-2xl hidden shadow-lg border border-gray-100">
+          <p class="text-5xl mb-4">&#x1F622;</p>
+          <h3 class="text-xl font-bold mb-2">Out of matches</h3>
+          <p class="text-sm text-ink-soft mb-6">We ran out of popular titles for these filters.</p>
+          <button id="wsww-restart-btn" class="primary-action w-full">Try different filters</button>
         </div>
 
-        <!-- Card Container -->
-        <div id="wsww-card" class="absolute inset-0 w-full h-full select-none touch-none cursor-grab active:cursor-grabbing origin-bottom bg-black">
-          <img id="wsww-poster" src="" alt="Poster" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-90 transition-opacity" />
+        <!-- Swipable Card -->
+        <div id="wsww-card" class="absolute inset-0 w-full h-full bg-white shadow-xl rounded-2xl flex flex-col overflow-hidden select-none touch-none cursor-grab active:cursor-grabbing origin-bottom border border-gray-100">
+          <div class="relative w-full flex-1 min-h-0 bg-gray-100">
+            <img id="wsww-poster" src="" alt="Poster" class="w-full h-full object-cover pointer-events-none" />
+            <div id="wsww-badge" class="absolute top-3 right-3 bg-white/90 backdrop-blur text-ink text-xs font-bold px-2 py-1 rounded shadow-sm">MOVIE</div>
+          </div>
           
-          <div id="wsww-badge" class="absolute top-4 right-4 bg-black/60 backdrop-blur-md text-white text-xs font-black tracking-widest px-3 py-1.5 rounded shadow-lg z-10">MOVIE</div>
-          
-          <!-- Content Overlay (Gradient) -->
-          <div class="absolute inset-x-0 bottom-0 pt-40 pb-6 px-6 bg-gradient-to-t from-black via-black/80 to-transparent flex flex-col text-white pointer-events-none">
+          <div class="p-4 bg-white shrink-0 h-32">
+            <h3 id="wsww-title" class="text-xl font-bold leading-tight mb-1 truncate text-ink">Title Here</h3>
             
-            <h3 id="wsww-title" class="text-3xl font-extrabold leading-tight mb-2 drop-shadow-md">Title Here</h3>
-            
-            <div class="flex items-center gap-3 text-sm text-gray-200 mb-3 font-semibold tracking-wide">
-              <span id="wsww-year">2026</span>
-              <span>&bull;</span>
-              <span class="flex items-center gap-1 text-yellow-400 drop-shadow">
-                <span>&#x2605;</span>
-                <span id="wsww-rating" class="text-white">8.5</span>
-              </span>
+            <div class="flex items-center justify-between text-sm text-ink-soft mb-2">
+              <div class="flex items-center gap-2 font-medium">
+                <span id="wsww-year">2026</span>
+                <span>&bull;</span>
+                <span class="flex items-center gap-1">
+                  <span class="text-yellow-500">&#x2605;</span>
+                  <span id="wsww-rating">8.5</span>
+                </span>
+              </div>
             </div>
             
-            <p id="wsww-overview" class="text-sm text-gray-300 line-clamp-3 mb-2 leading-relaxed drop-shadow-sm">Overview goes here</p>
+            <p id="wsww-overview" class="text-sm text-ink line-clamp-2">Overview goes here</p>
           </div>
         </div>
       </div>
       
-      <!-- Action Buttons below card -->
-      <div class="flex justify-center gap-8 mt-6 shrink-0 pb-4">
-        <button id="wsww-no-btn" class="flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-red-100 text-red-500 shadow-xl hover:bg-red-50 hover:scale-110 active:scale-95 transition-all text-2xl font-bold">
-          &#x2715;
+      <!-- Action Buttons (outside card) -->
+      <div class="flex justify-center gap-6 mt-8 w-full">
+        <button id="wsww-no-btn" class="flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-red-100 text-red-500 shadow-[0_4px_15px_rgba(239,68,68,0.15)] hover:bg-red-50 hover:scale-110 active:scale-95 transition-all text-4xl font-light leading-none pb-1">
+          &times;
         </button>
-        <button id="wsww-yes-btn" class="flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-green-100 text-green-500 shadow-xl hover:bg-green-50 hover:scale-110 active:scale-95 transition-all text-2xl font-bold">
-          &#x2713;
+        <button id="wsww-yes-btn" class="flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-green-100 text-green-500 shadow-[0_4px_15px_rgba(34,197,94,0.15)] hover:bg-green-50 hover:scale-110 active:scale-95 transition-all text-3xl font-bold leading-none pb-0.5">
+          &hearts;
         </button>
       </div>
     </div>
@@ -326,8 +328,8 @@ import ToolLayout from '../components/ToolLayout.astro';
   }
 
   function animateCardOut(direction: 'left' | 'right') {
-    const x = direction === 'left' ? -300 : 300;
-    const rotate = direction === 'left' ? -20 : 20;
+    const x = direction === 'left' ? -350 : 350;
+    const rotate = direction === 'left' ? -25 : 25;
     
     card.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s';
     card.style.transform = `translateX(${x}px) rotate(${rotate}deg)`;
@@ -427,6 +429,8 @@ import ToolLayout from '../components/ToolLayout.astro';
 
     setupScreen.classList.add('hidden');
     swipeScreen.classList.remove('hidden');
+    swipeScreen.classList.add('flex'); // Because it's flex-col now
+
     
     const success = await fetchTitles(currentPage);
     if (success) {
