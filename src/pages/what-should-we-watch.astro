@@ -97,12 +97,28 @@ import ToolLayout from '../components/ToolLayout.astro';
     <div id="wsww-match" class="hidden max-w-sm mx-auto text-center" aria-live="polite">
       <p class="eyebrow text-green-600 mb-6">We have a winner!</p>
       
-      <div class="surface p-4 bg-white shadow-xl rounded-xl mb-6 transform transition-all">
+      <div class="surface p-4 bg-white shadow-xl rounded-xl mb-6 transform transition-all text-left">
         <div class="relative w-full aspect-[2/3] rounded-lg overflow-hidden shadow-inner mb-4">
           <img id="wsww-match-poster" src="" alt="Poster" class="w-full h-full object-cover" />
         </div>
         <h3 id="wsww-match-title" class="text-2xl font-bold leading-tight mb-2"></h3>
-        <p id="wsww-match-year" class="text-ink-soft"></p>
+        
+        <div class="flex items-center gap-3 text-sm text-ink-soft mb-3">
+          <span id="wsww-match-year" class="font-medium"></span>
+          <span>&bull;</span>
+          <span class="flex items-center gap-1">
+            <span class="text-yellow-500">&#x2605;</span>
+            <span id="wsww-match-rating"></span>
+          </span>
+          <span id="wsww-match-runtime-dot" class="hidden">&bull;</span>
+          <span id="wsww-match-runtime" class="hidden"></span>
+        </div>
+
+        <p id="wsww-match-overview" class="text-sm text-ink mb-5 leading-relaxed"></p>
+
+        <a id="wsww-match-trailer" href="#" target="_blank" rel="noopener noreferrer" class="hidden flex items-center justify-center gap-2 w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors mb-2">
+          &#x25B6; Watch Trailer
+        </a>
       </div>
 
       <button id="wsww-play-again-btn" class="secondary-action w-full">Find something else</button>
@@ -148,6 +164,11 @@ import ToolLayout from '../components/ToolLayout.astro';
   const matchPosterEl = document.getElementById('wsww-match-poster') as HTMLImageElement;
   const matchTitleEl = document.getElementById('wsww-match-title')!;
   const matchYearEl = document.getElementById('wsww-match-year')!;
+  const matchRatingEl = document.getElementById('wsww-match-rating')!;
+  const matchRuntimeDot = document.getElementById('wsww-match-runtime-dot')!;
+  const matchRuntimeEl = document.getElementById('wsww-match-runtime')!;
+  const matchOverviewEl = document.getElementById('wsww-match-overview')!;
+  const matchTrailerEl = document.getElementById('wsww-match-trailer') as HTMLAnchorElement;
 
   // State
   let availableGenres: { name: string; slug: string }[] = [];
@@ -322,6 +343,26 @@ import ToolLayout from '../components/ToolLayout.astro';
     matchPosterEl.src = posterUrl;
     matchTitleEl.textContent = item.title;
     matchYearEl.textContent = item.year;
+    matchRatingEl.textContent = item.rating ? item.rating.toFixed(1) : 'NR';
+    matchOverviewEl.textContent = item.overview || 'No description available.';
+
+    if (item.runtime) {
+      const hours = Math.floor(item.runtime / 60);
+      const mins = item.runtime % 60;
+      matchRuntimeEl.textContent = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      matchRuntimeEl.classList.remove('hidden');
+      matchRuntimeDot.classList.remove('hidden');
+    } else {
+      matchRuntimeEl.classList.add('hidden');
+      matchRuntimeDot.classList.add('hidden');
+    }
+
+    if (item.trailer) {
+      matchTrailerEl.href = item.trailer;
+      matchTrailerEl.classList.remove('hidden');
+    } else {
+      matchTrailerEl.classList.add('hidden');
+    }
 
     swipeScreen.classList.add('hidden');
     matchScreen.classList.remove('hidden');
