@@ -5,25 +5,18 @@ import Layout from '../layouts/Layout.astro';
 <Layout title="What Should We Watch? | Randomlyo" description="Swipe through movies or shows to find what to watch tonight.">
   
   <div class="flex flex-col min-h-screen bg-slate-50">
-    <!-- Compact Header -->
-    <header class="sticky top-0 z-50 bg-white border-b border-gray-200">
-      <div class="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
-        <a href="/#tools" class="flex items-center gap-1 text-sm font-bold text-ink-soft hover:text-ink transition-colors">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Tools
-        </a>
-        <h1 class="text-lg font-bold text-ink m-0">What Should We Watch?</h1>
-      </div>
-    </header>
-
     <main class="flex-1 w-full max-w-4xl mx-auto p-4 md:p-6 pb-20">
       
       <!-- Setup Screen -->
+      <div id="wsww-setup" class="grid items-start gap-5 lg:grid-cols-1 max-w-2xl mx-auto">
+        
+        <div class="text-center mb-2">
+          <h1 class="text-3xl font-bold text-ink mb-2">What Should We Watch?</h1>
+          <p class="text-ink-soft">Swipe through movies or shows to find what to watch tonight.</p>
+        </div>
 
-      <!-- Setup Screen -->
-    <div id="wsww-setup" class="grid items-start gap-5 lg:grid-cols-1 max-w-2xl mx-auto">
-      <div class="surface p-5 sm:p-7">
-        <h2 class="mt-2 text-xl mb-4">Set your preferences</h2>
+        <div class="surface p-5 sm:p-7">
+          <h2 class="mt-2 text-xl mb-4">Set your preferences</h2>
         
         <div class="mb-5">
           <p class="font-medium mb-2">Type</p>
