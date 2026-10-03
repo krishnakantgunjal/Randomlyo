@@ -31,18 +31,6 @@ import Layout from '../layouts/Layout.astro';
         </div>
 
         <div class="mb-5">
-          <p class="font-medium mb-2">Origin / Region</p>
-          <select id="wsww-region" class="w-full p-2.5 rounded-lg border border-gray-300 bg-white text-ink outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-shadow">
-            <option value="">Global (All)</option>
-            <option value="in">Indian (Bollywood, South, etc)</option>
-            <option value="kr">Korean (K-Dramas, K-Movies)</option>
-            <option value="jp">Japanese (Anime, Live Action)</option>
-            <option value="us">Hollywood / US</option>
-            <option value="gb">British</option>
-          </select>
-        </div>
-
-        <div class="mb-5">
           <p class="font-medium mb-2">Genres</p>
           <div id="wsww-genres-loading" class="text-sm text-ink-soft">Loading genres...</div>
           <div id="wsww-genres-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto hidden">
@@ -192,7 +180,6 @@ import Layout from '../layouts/Layout.astro';
   const genresContainer = document.getElementById('wsww-genres-container')!;
   const startBtn = document.getElementById('wsww-start-btn') as HTMLButtonElement;
   const errorEl = document.getElementById('wsww-error')!;
-  const regionSelect = document.getElementById('wsww-region') as HTMLSelectElement;
   
   const typeRadios = document.querySelectorAll<HTMLInputElement>('input[name="wsww-type"]');
   const backBtn = document.getElementById('wsww-back-btn')!;
@@ -229,7 +216,7 @@ import Layout from '../layouts/Layout.astro';
   let currentBatch: any[] = [];
   let currentIndex = 0;
   let currentPage = 1;
-  let currentFilters = { type: 'movies', genres: [] as string[], region: '' };
+  let currentFilters = { type: 'movies', genres: [] as string[] };
   let isFetching = false;
 
   // Init
@@ -275,25 +262,40 @@ import Layout from '../layouts/Layout.astro';
     const genreStr = currentFilters.genres.join(',');
     const endpoint = type === 'movies' ? 'movies/popular' : 'shows/popular';
     
-    let url = `https://api.trakt.tv/${endpoint}?page=${page}&limit=20&extended=full`;
-    if (genreStr) url += `&genres=${genreStr}`;
-    if (currentFilters.region) url += `&countries=${currentFilters.region}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'trakt-api-version': '2',
+      'trakt-api-key': TRAKT_CLIENT_ID
+    };
+
+    // Cycle through diverse regions alongside global hits
+    const diverseRegions = ['in', 'kr', 'jp'];
+    const currentRegion = diverseRegions[(page - 1) % diverseRegions.length];
+
+    let globalUrl = `https://api.trakt.tv/${endpoint}?page=${page}&limit=12&extended=full`;
+    let diverseUrl = `https://api.trakt.tv/${endpoint}?page=${page}&limit=12&extended=full&countries=${currentRegion}`;
+
+    if (genreStr) {
+      globalUrl += `&genres=${genreStr}`;
+      diverseUrl += `&genres=${genreStr}`;
+    }
 
     try {
-      const res = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          'trakt-api-version': '2',
-          'trakt-api-key': TRAKT_CLIENT_ID
-        }
-      });
+      const [globalRes, diverseRes] = await Promise.all([
+        fetch(globalUrl, { headers }),
+        fetch(diverseUrl, { headers })
+      ]);
       
-      if (!res.ok) {
-        if (res.status === 429) throw new Error('Rate limit exceeded. Try again in a minute.');
+      if (!globalRes.ok) {
+        if (globalRes.status === 429) throw new Error('Rate limit exceeded. Try again in a minute.');
         throw new Error('Could not load titles right now.');
       }
 
-      const data = await res.json();
+      const globalData = await globalRes.json();
+      const diverseData = diverseRes.ok ? await diverseRes.json() : [];
+      
+      // Combine and shuffle
+      const data = [...globalData, ...diverseData];
       
       // Shuffle the results client-side
       for (let i = data.length - 1; i > 0; i--) {
@@ -466,9 +468,8 @@ import Layout from '../layouts/Layout.astro';
     const selectedType = document.querySelector<HTMLInputElement>('input[name="wsww-type"]:checked')?.value || 'movies';
     const checkboxes = document.querySelectorAll<HTMLInputElement>('.genre-checkbox:checked');
     const selectedGenres = Array.from(checkboxes).map(cb => cb.value);
-    const selectedRegion = regionSelect.value;
 
-    currentFilters = { type: selectedType, genres: selectedGenres, region: selectedRegion };
+    currentFilters = { type: selectedType, genres: selectedGenres };
     currentBatch = [];
     currentIndex = 0;
     currentPage = 1;
