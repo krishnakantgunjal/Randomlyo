@@ -88,43 +88,76 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
                 Player 0 sits at top: playerAngle(0) = -90 + (360/n)*0 = -90 deg CSS.
                 finalRotation = FULL_SPINS_DEG + targetPlayerAngle - BOTTLE_BASE_ANGLE
               -->
-              <div class="stb-bottle-3d" id="stb-bottle-3d">
-                <!-- Bottle SVG: neck points UP (negative Y = top of SVG viewport) -->
+              <div class="stb-bottle-3d" id="stb-bottle-3d" title="Click to spin!">
+                <!-- Bottle SVG: premium wine bottle pointing UP -->
                 <svg
                   class="stb-bottle-svg"
-                  viewBox="0 0 60 160"
+                  viewBox="0 0 80 240"
                   xmlns="http://www.w3.org/2000/svg"
                   aria-hidden="true"
                 >
-                  <!-- Bottle neck tip (top — the pointing end) -->
-                  <rect x="23" y="0" width="14" height="8" rx="3" fill="url(#bottleGrad)"/>
-                  <!-- Neck ring -->
-                  <rect x="20" y="8" width="20" height="6" rx="3" fill="#7e93eb"/>
-                  <!-- Neck body -->
-                  <rect x="22" y="14" width="16" height="30" rx="2" fill="url(#bottleGrad)"/>
-                  <!-- Shoulder -->
-                  <path d="M22 44 Q18 58 14 70 L46 70 Q42 58 38 44 Z" fill="url(#bottleGrad)"/>
-                  <!-- Body -->
-                  <rect x="12" y="70" width="36" height="72" rx="8" fill="url(#bottleGrad)"/>
-                  <!-- Bottom cap -->
-                  <rect x="12" y="136" width="36" height="12" rx="6" fill="#56627a"/>
-                  <!-- Glass highlight -->
-                  <rect x="17" y="72" width="8" height="60" rx="4" fill="rgba(255,255,255,0.18)"/>
-                  <!-- Label area -->
-                  <rect x="16" y="84" width="28" height="42" rx="5" fill="rgba(255,255,255,0.13)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
-                  <!-- Label text lines -->
-                  <rect x="20" y="97" width="20" height="2.5" rx="1.2" fill="rgba(255,255,255,0.5)"/>
-                  <rect x="21" y="103" width="18" height="2" rx="1" fill="rgba(255,255,255,0.35)"/>
-                  <rect x="22" y="108" width="16" height="2" rx="1" fill="rgba(255,255,255,0.3)"/>
-                  <!-- Neck tip dot (marks the pointing end) -->
-                  <circle cx="30" cy="3" r="3.5" fill="#fff" opacity="0.9"/>
                   <defs>
-                    <linearGradient id="bottleGrad" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stop-color="#4a5f9c"/>
-                      <stop offset="40%" stop-color="#7e93eb"/>
-                      <stop offset="100%" stop-color="#3a4d7a"/>
+                    <!-- Dark green glass body gradient -->
+                    <linearGradient id="glassBody" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stop-color="#0a2a11"/>
+                      <stop offset="15%" stop-color="#124a1e"/>
+                      <stop offset="30%" stop-color="#2a7a3b"/>
+                      <stop offset="60%" stop-color="#1c5728"/>
+                      <stop offset="90%" stop-color="#0c3014"/>
+                      <stop offset="100%" stop-color="#041207"/>
+                    </linearGradient>
+
+                    <!-- Metallic foil/cap gradient -->
+                    <linearGradient id="foilGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stop-color="#690a16"/>
+                      <stop offset="25%" stop-color="#b01327"/>
+                      <stop offset="70%" stop-color="#800c1b"/>
+                      <stop offset="100%" stop-color="#40040c"/>
+                    </linearGradient>
+
+                    <!-- Premium Label gradient -->
+                    <linearGradient id="labelGrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#fffdf0"/>
+                      <stop offset="100%" stop-color="#e8e1c3"/>
                     </linearGradient>
                   </defs>
+
+                  <!-- Bottle Silhouette -->
+                  <!-- Foil rim detail -->
+                  <rect x="30" y="32" width="20" height="4" rx="2" fill="url(#foilGrad)"/>
+                  <rect x="31" y="5" width="18" height="6" rx="2" fill="url(#foilGrad)"/>
+                  <!-- Neck cap/foil -->
+                  <path d="M 32 5 C 32 2, 48 2, 48 5 L 48 40 L 32 40 Z" fill="url(#foilGrad)"/>
+                  
+                  <!-- Glass Neck -->
+                  <rect x="33" y="40" width="14" height="40" fill="url(#glassBody)"/>
+                  
+                  <!-- Glass Shoulder -->
+                  <path d="M 33 80 C 33 110, 15 120, 15 140 L 65 140 C 65 120, 47 110, 47 80 Z" fill="url(#glassBody)"/>
+                  
+                  <!-- Glass Main Body -->
+                  <path d="M 15 140 L 15 220 C 15 235, 65 235, 65 220 L 65 140 Z" fill="url(#glassBody)"/>
+                  
+                  <!-- Base indent -->
+                  <path d="M 25 230 C 40 220, 55 230, 55 230 L 25 230" stroke="#0a2a11" stroke-width="4" fill="none"/>
+
+                  <!-- Left Main Highlight (Curved to match shoulder) -->
+                  <path d="M 35 40 L 35 80 C 35 110, 20 120, 20 140 L 20 220" stroke="rgba(255,255,255,0.25)" stroke-width="3" fill="none" stroke-linecap="round"/>
+                  <!-- Right edge rim light -->
+                  <path d="M 45 40 L 45 80 C 45 110, 60 120, 60 140 L 60 220" stroke="rgba(255,255,255,0.1)" stroke-width="2" fill="none" stroke-linecap="round"/>
+                  
+                  <!-- Premium Label -->
+                  <rect x="22" y="145" width="36" height="50" rx="3" fill="url(#labelGrad)"/>
+                  <rect x="25" y="148" width="30" height="44" rx="1" fill="none" stroke="#b09041" stroke-width="1"/>
+                  
+                  <!-- Label Content (Star + lines) -->
+                  <path d="M 40 154 L 42 160 L 48 160 L 43 164 L 45 170 L 40 166 L 35 170 L 37 164 L 32 160 L 38 160 Z" fill="#b09041"/>
+                  <rect x="28" y="176" width="24" height="2" rx="1" fill="#4a3c1c"/>
+                  <rect x="32" y="181" width="16" height="1.5" rx="0.5" fill="#4a3c1c"/>
+                  <rect x="30" y="185" width="20" height="1.5" rx="0.5" fill="#4a3c1c"/>
+
+                  <!-- Pointer dot to emphasize direction at the neck -->
+                  <circle cx="40" cy="18" r="3" fill="rgba(255,255,255,0.8)" />
                 </svg>
               </div>
             </div>
@@ -491,6 +524,7 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
      ───────────────────────────────────────────── */
   spinBtn.addEventListener('click', doSpin);
   spinAgainBtn.addEventListener('click', doSpin);
+  bottle3d.addEventListener('click', doSpin);
 
   function doSpin() {
     if (spinning) return;
@@ -1095,6 +1129,16 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
     transform-style: preserve-3d;
     transform-origin: center center;
     will-change: transform;
+    cursor: pointer;
+    transition: filter 0.2s ease;
+  }
+  
+  .stb-bottle-3d:hover {
+    filter: drop-shadow(0 4px 12px rgba(126, 147, 235, 0.4)) brightness(1.1);
+  }
+  
+  .stb-bottle-3d:active {
+    filter: brightness(0.9);
   }
 
   .stb-bottle-svg {
