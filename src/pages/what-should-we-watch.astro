@@ -29,6 +29,27 @@ import Layout from '../layouts/Layout.astro';
             </label>
           </div>
         </div>
+        <div class="mb-5">
+          <p class="font-medium mb-2">Region / Origin</p>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input type="radio" name="wsww-region" value="" checked class="w-4 h-4 text-blue-600"> 
+              <span class="text-sm">Global (Default)</span>
+            </label>
+            <label class="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input type="radio" name="wsww-region" value="in" class="w-4 h-4 text-blue-600"> 
+              <span class="text-sm">Indian (Bollywood, South)</span>
+            </label>
+            <label class="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input type="radio" name="wsww-region" value="kr" class="w-4 h-4 text-blue-600"> 
+              <span class="text-sm">Korean (K-Drama/Movies)</span>
+            </label>
+            <label class="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input type="radio" name="wsww-region" value="jp" class="w-4 h-4 text-blue-600"> 
+              <span class="text-sm">Japanese (Anime, etc)</span>
+            </label>
+          </div>
+        </div>
 
         <div class="mb-5">
           <p class="font-medium mb-2">Genres</p>
@@ -216,7 +237,7 @@ import Layout from '../layouts/Layout.astro';
   let currentBatch: any[] = [];
   let currentIndex = 0;
   let currentPage = 1;
-  let currentFilters = { type: 'movies', genres: [] as string[] };
+  let currentFilters = { type: 'movies', genres: [] as string[], region: '' };
   let isFetching = false;
 
   // Init
@@ -264,6 +285,7 @@ import Layout from '../layouts/Layout.astro';
     
     let url = `https://api.trakt.tv/${endpoint}?page=${page}&limit=20&extended=full`;
     if (genreStr) url += `&genres=${genreStr}`;
+    if (currentFilters.region) url += `&countries=${currentFilters.region}`;
 
     try {
       const res = await fetch(url, {
@@ -450,10 +472,11 @@ import Layout from '../layouts/Layout.astro';
   // Event Listeners
   startBtn.addEventListener('click', async () => {
     const selectedType = document.querySelector<HTMLInputElement>('input[name="wsww-type"]:checked')?.value || 'movies';
+    const selectedRegion = document.querySelector<HTMLInputElement>('input[name="wsww-region"]:checked')?.value || '';
     const checkboxes = document.querySelectorAll<HTMLInputElement>('.genre-checkbox:checked');
     const selectedGenres = Array.from(checkboxes).map(cb => cb.value);
 
-    currentFilters = { type: selectedType, genres: selectedGenres };
+    currentFilters = { type: selectedType, genres: selectedGenres, region: selectedRegion };
     currentBatch = [];
     currentIndex = 0;
     currentPage = 1;
