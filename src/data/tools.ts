@@ -92,7 +92,17 @@ export const TOOLS: Record<string, Tool> = {
     description: 'Let Randomlyo choose dinner.',
     category: 'decide',
     icon: 'food',
-    related: ['coinToss', 'whoGoesFirst'],
+    related: ['coinToss', 'whoGoesFirst', 'whatShouldWeWatch'],
+  },
+  whatShouldWeWatch: {
+    id: 'whatShouldWeWatch',
+    name: 'What Should We Watch?',
+    slug: 'what-should-we-watch',
+    url: '/what-should-we-watch/',
+    description: 'Swipe through movies or shows to find what to watch tonight.',
+    category: 'decide',
+    icon: 'movie',
+    related: ['whatShouldWeEat', 'whoGoesFirst'],
   },
   diceRoller: {
     id: 'diceRoller',
@@ -145,7 +155,7 @@ export const TOOL_CATEGORIES = {
   decide: {
     name: 'DECIDE',
     description: 'Let randomness make the decision.',
-    tools: [TOOLS.coinToss, TOOLS.whoGoesFirst, TOOLS.whatShouldWeEat],
+    tools: [TOOLS.coinToss, TOOLS.whoGoesFirst, TOOLS.whatShouldWeEat, TOOLS.whatShouldWeWatch],
   },
   play: {
     name: 'PLAY & WIN',

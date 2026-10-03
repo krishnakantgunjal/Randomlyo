@@ -1,0 +1,415 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<Layout title="What Should We Watch? | Randomlyo" description="Swipe through movies or shows to find what to watch tonight.">
+  <ToolLayout title="What Should We Watch?" description="Swipe through movies or shows to find what to watch tonight." toolId="whatShouldWeWatch">
+    
+    <!-- Setup Screen -->
+    <div id="wsww-setup" class="grid items-start gap-5 lg:grid-cols-1 max-w-2xl mx-auto">
+      <div class="surface p-5 sm:p-7">
+        <h2 class="mt-2 text-xl mb-4">Set your preferences</h2>
+        
+        <div class="mb-5">
+          <p class="font-medium mb-2">Type</p>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="wsww-type" value="movies" checked class="w-4 h-4 text-blue-600"> Movies
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="wsww-type" value="shows" class="w-4 h-4 text-blue-600"> Shows
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-5">
+          <p class="font-medium mb-2">Genres</p>
+          <div id="wsww-genres-loading" class="text-sm text-ink-soft">Loading genres...</div>
+          <div id="wsww-genres-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto hidden">
+            <!-- Checkboxes injected by JS -->
+          </div>
+        </div>
+
+        <button id="wsww-start-btn" type="button" class="primary-action mt-6 w-full" disabled>
+          Start Swiping
+        </button>
+        <p id="wsww-error" class="mt-4 hidden border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert"></p>
+      </div>
+    </div>
+
+    <!-- Swipe Screen -->
+    <div id="wsww-swipe" class="hidden max-w-sm mx-auto">
+      <div class="flex justify-between items-center mb-4 px-2">
+        <button id="wsww-back-btn" class="text-sm text-ink-soft hover:text-ink">&#x2190; Change filters</button>
+        <span id="wsww-counter" class="text-sm text-ink-soft font-medium"></span>
+      </div>
+
+      <div class="surface p-4 relative overflow-hidden bg-white shadow-lg rounded-xl flex flex-col items-center">
+        <!-- Loading overlay -->
+        <div id="wsww-loading" class="absolute inset-0 bg-white/90 z-20 flex flex-col items-center justify-center hidden">
+          <div class="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mb-3"></div>
+          <p class="text-sm font-medium">Fetching titles...</p>
+        </div>
+
+        <!-- End State -->
+        <div id="wsww-end-state" class="absolute inset-0 bg-white z-20 flex flex-col items-center justify-center p-6 text-center hidden">
+          <p class="text-4xl mb-4">&#x1F622;</p>
+          <h3 class="text-xl font-medium mb-2">Out of matches</h3>
+          <p class="text-sm text-ink-soft mb-6">We ran out of popular titles for these filters.</p>
+          <button id="wsww-restart-btn" class="primary-action w-full">Try different filters</button>
+        </div>
+
+        <!-- Card Container -->
+        <div id="wsww-card" class="w-full flex flex-col items-center select-none touch-none">
+          <div class="relative w-full aspect-[2/3] rounded-lg overflow-hidden bg-gray-100 shadow-inner mb-4">
+            <img id="wsww-poster" src="" alt="Poster" class="w-full h-full object-cover pointer-events-none" />
+            <div id="wsww-badge" class="absolute top-2 right-2 bg-black/70 text-white text-xs font-bold px-2 py-1 rounded">MOVIE</div>
+          </div>
+          
+          <h3 id="wsww-title" class="text-xl font-bold text-center leading-tight mb-1">Title Here</h3>
+          
+          <div class="flex items-center gap-3 text-sm text-ink-soft mb-3">
+            <span id="wsww-year" class="font-medium">2026</span>
+            <span>&bull;</span>
+            <span class="flex items-center gap-1">
+              <span class="text-yellow-500">&#x2605;</span>
+              <span id="wsww-rating">8.5</span>
+            </span>
+          </div>
+          
+          <p id="wsww-overview" class="text-sm text-center text-ink line-clamp-3 mb-6 px-2">Overview goes here</p>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-4 w-full px-2 mt-auto">
+            <button id="wsww-no-btn" class="flex-1 py-3 px-4 rounded-xl border-2 border-red-200 text-red-600 font-bold hover:bg-red-50 transition-colors">
+              &#x2715; Not tonight
+            </button>
+            <button id="wsww-yes-btn" class="flex-1 py-3 px-4 rounded-xl border-2 border-green-500 bg-green-500 text-white font-bold hover:bg-green-600 hover:border-green-600 transition-colors shadow-md">
+              &#x2713; Let's watch this!
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Match Screen -->
+    <div id="wsww-match" class="hidden max-w-sm mx-auto text-center" aria-live="polite">
+      <p class="eyebrow text-green-600 mb-6">We have a winner!</p>
+      
+      <div class="surface p-4 bg-white shadow-xl rounded-xl mb-6 transform transition-all">
+        <div class="relative w-full aspect-[2/3] rounded-lg overflow-hidden shadow-inner mb-4">
+          <img id="wsww-match-poster" src="" alt="Poster" class="w-full h-full object-cover" />
+        </div>
+        <h3 id="wsww-match-title" class="text-2xl font-bold leading-tight mb-2"></h3>
+        <p id="wsww-match-year" class="text-ink-soft"></p>
+      </div>
+
+      <button id="wsww-play-again-btn" class="secondary-action w-full">Find something else</button>
+    </div>
+
+  </ToolLayout>
+</Layout>
+
+<script>
+  import { revealResult, burstConfetti } from '../lib/effects';
+
+  const TRAKT_CLIENT_ID = import.meta.env.PUBLIC_TRAKT_CLIENT_ID;
+
+  // DOM Elements
+  const setupScreen = document.getElementById('wsww-setup')!;
+  const swipeScreen = document.getElementById('wsww-swipe')!;
+  const matchScreen = document.getElementById('wsww-match')!;
+  
+  const genresLoading = document.getElementById('wsww-genres-loading')!;
+  const genresContainer = document.getElementById('wsww-genres-container')!;
+  const startBtn = document.getElementById('wsww-start-btn') as HTMLButtonElement;
+  const errorEl = document.getElementById('wsww-error')!;
+  
+  const typeRadios = document.querySelectorAll<HTMLInputElement>('input[name="wsww-type"]');
+  const backBtn = document.getElementById('wsww-back-btn')!;
+  const loadingOverlay = document.getElementById('wsww-loading')!;
+  const endState = document.getElementById('wsww-end-state')!;
+  const restartBtn = document.getElementById('wsww-restart-btn')!;
+  
+  const card = document.getElementById('wsww-card')!;
+  const posterEl = document.getElementById('wsww-poster') as HTMLImageElement;
+  const titleEl = document.getElementById('wsww-title')!;
+  const yearEl = document.getElementById('wsww-year')!;
+  const ratingEl = document.getElementById('wsww-rating')!;
+  const overviewEl = document.getElementById('wsww-overview')!;
+  const badgeEl = document.getElementById('wsww-badge')!;
+  const counterEl = document.getElementById('wsww-counter')!;
+  
+  const noBtn = document.getElementById('wsww-no-btn')!;
+  const yesBtn = document.getElementById('wsww-yes-btn')!;
+  const playAgainBtn = document.getElementById('wsww-play-again-btn')!;
+  
+  const matchPosterEl = document.getElementById('wsww-match-poster') as HTMLImageElement;
+  const matchTitleEl = document.getElementById('wsww-match-title')!;
+  const matchYearEl = document.getElementById('wsww-match-year')!;
+
+  // State
+  let availableGenres: { name: string; slug: string }[] = [];
+  let currentBatch: any[] = [];
+  let currentIndex = 0;
+  let currentPage = 1;
+  let currentFilters = { type: 'movies', genres: [] as string[] };
+  let isFetching = false;
+
+  // Init
+  async function fetchGenres() {
+    try {
+      const res = await fetch('https://api.trakt.tv/genres/movies', {
+        headers: {
+          'Content-Type': 'application/json',
+          'trakt-api-version': '2',
+          'trakt-api-key': TRAKT_CLIENT_ID
+        }
+      });
+      if (!res.ok) throw new Error('Failed to load genres');
+      availableGenres = await res.json();
+      
+      renderGenres();
+      genresLoading.classList.add('hidden');
+      genresContainer.classList.remove('hidden');
+      startBtn.disabled = false;
+    } catch (e) {
+      genresLoading.textContent = 'Failed to load genres. Check network.';
+      genresLoading.classList.add('text-red-600');
+    }
+  }
+
+  function renderGenres() {
+    genresContainer.innerHTML = availableGenres.map(g => `
+      <label class="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 border border-gray-100">
+        <input type="checkbox" value="${g.slug}" class="w-4 h-4 genre-checkbox rounded text-blue-600 focus:ring-blue-500">
+        <span class="text-sm truncate" title="${g.name}">${g.name}</span>
+      </label>
+    `).join('');
+  }
+
+  async function fetchTitles(page: number) {
+    if (isFetching) return false;
+    isFetching = true;
+    loadingOverlay.classList.remove('hidden');
+    endState.classList.add('hidden');
+    errorEl.classList.add('hidden');
+
+    const type = currentFilters.type;
+    const genreStr = currentFilters.genres.join(',');
+    const endpoint = type === 'movies' ? 'movies/popular' : 'shows/popular';
+    
+    let url = `https://api.trakt.tv/${endpoint}?page=${page}&limit=20&extended=full`;
+    if (genreStr) url += `&genres=${genreStr}`;
+
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'trakt-api-version': '2',
+          'trakt-api-key': TRAKT_CLIENT_ID
+        }
+      });
+      
+      if (!res.ok) {
+        if (res.status === 429) throw new Error('Rate limit exceeded. Try again in a minute.');
+        throw new Error('Could not load titles right now.');
+      }
+
+      const data = await res.json();
+      
+      // Shuffle the results client-side
+      for (let i = data.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [data[i], data[j]] = [data[j], data[i]];
+      }
+
+      // Filter out items without posters or required info
+      const validData = data.filter((d: any) => d.images?.poster?.[0]);
+
+      if (validData.length === 0) {
+        isFetching = false;
+        return false;
+      }
+
+      currentBatch = currentBatch.concat(validData);
+      isFetching = false;
+      loadingOverlay.classList.add('hidden');
+      return true;
+    } catch (e: any) {
+      isFetching = false;
+      loadingOverlay.classList.add('hidden');
+      errorEl.textContent = e.message;
+      errorEl.classList.remove('hidden');
+      if (page === 1) {
+        setupScreen.classList.remove('hidden');
+        swipeScreen.classList.add('hidden');
+      }
+      return false;
+    }
+  }
+
+  function showCurrentCard() {
+    if (currentIndex >= currentBatch.length) {
+      handleBatchEnd();
+      return;
+    }
+
+    const item = currentBatch[currentIndex];
+    
+    // Some endpoints wrap in { movie: ... } depending on route, but /popular returns flat array of movies
+    // Wait, some Trakt APIs wrap. Let's assume flat based on my test: `d.title`.
+    const title = item.title || 'Unknown';
+    const year = item.year || '';
+    const rating = item.rating ? item.rating.toFixed(1) : 'NR';
+    const overview = item.overview || 'No description available.';
+    
+    // The Trakt API returns image domains without https protocol sometimes
+    let posterUrl = item.images?.poster?.[0] || '';
+    if (posterUrl && !posterUrl.startsWith('http')) {
+      posterUrl = 'https://' + posterUrl;
+    }
+
+    posterEl.src = posterUrl;
+    titleEl.textContent = title;
+    yearEl.textContent = year.toString();
+    ratingEl.textContent = rating;
+    overviewEl.textContent = overview;
+    badgeEl.textContent = currentFilters.type === 'movies' ? 'MOVIE' : 'SHOW';
+    
+    counterEl.textContent = `${currentIndex + 1} / ${currentBatch.length}`;
+    card.style.transform = 'translateX(0) rotate(0)';
+    card.style.opacity = '1';
+  }
+
+  async function handleBatchEnd() {
+    loadingOverlay.classList.remove('hidden');
+    currentPage++;
+    const gotMore = await fetchTitles(currentPage);
+    if (gotMore) {
+      showCurrentCard();
+    } else {
+      loadingOverlay.classList.add('hidden');
+      endState.classList.remove('hidden');
+    }
+  }
+
+  function animateCardOut(direction: 'left' | 'right') {
+    const x = direction === 'left' ? -300 : 300;
+    const rotate = direction === 'left' ? -20 : 20;
+    
+    card.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s';
+    card.style.transform = `translateX(${x}px) rotate(${rotate}deg)`;
+    card.style.opacity = '0';
+    
+    setTimeout(() => {
+      card.style.transition = 'none';
+      if (direction === 'left') {
+        currentIndex++;
+        showCurrentCard();
+      } else {
+        showMatch();
+      }
+    }, 300);
+  }
+
+  function showMatch() {
+    const item = currentBatch[currentIndex];
+    let posterUrl = item.images?.poster?.[0] || '';
+    if (posterUrl && !posterUrl.startsWith('http')) posterUrl = 'https://' + posterUrl;
+
+    matchPosterEl.src = posterUrl;
+    matchTitleEl.textContent = item.title;
+    matchYearEl.textContent = item.year;
+
+    swipeScreen.classList.add('hidden');
+    matchScreen.classList.remove('hidden');
+    
+    revealResult(matchScreen);
+    burstConfetti();
+  }
+
+  // Event Listeners
+  startBtn.addEventListener('click', async () => {
+    const selectedType = document.querySelector<HTMLInputElement>('input[name="wsww-type"]:checked')?.value || 'movies';
+    const checkboxes = document.querySelectorAll<HTMLInputElement>('.genre-checkbox:checked');
+    const selectedGenres = Array.from(checkboxes).map(cb => cb.value);
+
+    currentFilters = { type: selectedType, genres: selectedGenres };
+    currentBatch = [];
+    currentIndex = 0;
+    currentPage = 1;
+
+    setupScreen.classList.add('hidden');
+    swipeScreen.classList.remove('hidden');
+    
+    const success = await fetchTitles(currentPage);
+    if (success) {
+      showCurrentCard();
+    }
+  });
+
+  backBtn.addEventListener('click', () => {
+    swipeScreen.classList.add('hidden');
+    setupScreen.classList.remove('hidden');
+  });
+
+  restartBtn.addEventListener('click', () => {
+    swipeScreen.classList.add('hidden');
+    setupScreen.classList.remove('hidden');
+  });
+
+  playAgainBtn.addEventListener('click', () => {
+    matchScreen.classList.add('hidden');
+    setupScreen.classList.remove('hidden');
+  });
+
+  noBtn.addEventListener('click', () => animateCardOut('left'));
+  yesBtn.addEventListener('click', () => animateCardOut('right'));
+
+  // Swipe Gestures
+  let startX = 0;
+  let currentX = 0;
+  let isDragging = false;
+
+  card.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    isDragging = true;
+    card.style.transition = 'none';
+  }, { passive: true });
+
+  card.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    currentX = e.touches[0].clientX - startX;
+    const rotate = currentX * 0.05;
+    card.style.transform = `translateX(${currentX}px) rotate(${rotate}deg)`;
+    
+    // Optional: adjust opacity of yes/no buttons based on swipe direction
+  }, { passive: true });
+
+  card.addEventListener('touchend', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    
+    if (currentX < -100) {
+      animateCardOut('left');
+    } else if (currentX > 100) {
+      animateCardOut('right');
+    } else {
+      // Snap back
+      card.style.transition = 'transform 0.3s ease';
+      card.style.transform = 'translateX(0) rotate(0)';
+    }
+    currentX = 0;
+  });
+
+  // Init
+  if (TRAKT_CLIENT_ID) {
+    fetchGenres();
+  } else {
+    genresLoading.textContent = 'API Key missing. Please configure .env';
+    genresLoading.classList.add('text-red-600');
+  }
+
+</script>
