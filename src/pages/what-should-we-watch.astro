@@ -6,7 +6,14 @@ import ToolLayout from '../components/ToolLayout.astro';
 <Layout title="What Should We Watch? | Randomlyo" description="Swipe through movies or shows to find what to watch tonight.">
   <ToolLayout title="What Should We Watch?" description="Swipe through movies or shows to find what to watch tonight." toolId="whatShouldWeWatch">
     
-    <!-- Setup Screen -->
+    <!-- App Container -->
+    <div id="wsww-app-container" class="relative w-full transition-all">
+      <button id="wsww-fullscreen-btn" class="absolute -top-14 left-0 z-50 p-2 text-ink-soft hover:text-ink flex items-center gap-2 text-sm font-medium bg-white/90 border border-gray-100 rounded-lg backdrop-blur shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        <span id="wsww-fs-text">Full Screen</span>
+      </button>
+
+      <!-- Setup Screen -->
     <div id="wsww-setup" class="grid items-start gap-5 lg:grid-cols-1 max-w-2xl mx-auto">
       <div class="surface p-5 sm:p-7">
         <h2 class="mt-2 text-xl mb-4">Set your preferences</h2>
@@ -134,6 +141,8 @@ import ToolLayout from '../components/ToolLayout.astro';
       <button id="wsww-play-again-btn" class="secondary-action w-full">Find something else</button>
     </div>
 
+    </div> <!-- End App Container -->
+
   </ToolLayout>
 </Layout>
 
@@ -180,6 +189,11 @@ import ToolLayout from '../components/ToolLayout.astro';
   const matchOverviewEl = document.getElementById('wsww-match-overview')!;
   const matchDetailsEl = document.getElementById('wsww-match-details')!;
   const matchTrailerEl = document.getElementById('wsww-match-trailer') as HTMLAnchorElement;
+
+  const appContainer = document.getElementById('wsww-app-container')!;
+  const fullscreenBtn = document.getElementById('wsww-fullscreen-btn')!;
+  const fsText = document.getElementById('wsww-fs-text')!;
+  let isFullscreen = false;
 
   // State
   let availableGenres: { name: string; slug: string }[] = [];
@@ -456,6 +470,17 @@ import ToolLayout from '../components/ToolLayout.astro';
   noBtn.addEventListener('click', () => animateCardOut('left'));
   yesBtn.addEventListener('click', () => animateCardOut('right'));
 
+  fullscreenBtn.addEventListener('click', () => {
+    isFullscreen = !isFullscreen;
+    if (isFullscreen) {
+      appContainer.classList.add('wsww-fixed-fullscreen');
+      fsText.textContent = 'Exit Full Screen';
+    } else {
+      appContainer.classList.remove('wsww-fixed-fullscreen');
+      fsText.textContent = 'Full Screen';
+    }
+  });
+
   // Swipe Gestures
   let startX = 0;
   let currentX = 0;
@@ -501,3 +526,21 @@ import ToolLayout from '../components/ToolLayout.astro';
   }
 
 </script>
+
+<style>
+  .wsww-fixed-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    background-color: #f8fafc;
+    padding: 4rem 1rem 1rem 1rem;
+    overflow-y: auto;
+  }
+  .wsww-fixed-fullscreen #wsww-fullscreen-btn {
+    top: 1rem;
+    left: 1rem;
+  }
+</style>
