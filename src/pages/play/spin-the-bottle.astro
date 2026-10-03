@@ -80,6 +80,7 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
 
             <!-- 3D Bottle in centre -->
             <div class="stb-bottle-scene" id="stb-bottle-scene">
+              <div class="stb-bottle-shadow" id="stb-bottle-shadow"></div>
               <!--
                 GEOMETRY CONTRACT
                 The bottle SVG is drawn so the NECK points UP (toward 12 o'clock).
@@ -486,7 +487,8 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
      Verification identity (logged after each spin):
        neckAngle = (BOTTLE_BASE_ANGLE + finalRotation) mod 360  (normalised)
        playerTarget = targetPlayerAngle mod 360                  (normalised)
-       These must be equal within floating-point tolerance.
+     These must be equal within floating-point tolerance.
+     ───────────────────────────────────────────── */
   spinBtn.addEventListener('click', doSpin);
   spinAgainBtn.addEventListener('click', doSpin);
 
@@ -539,7 +541,7 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
 
     const easeOutQuart = (t: number) => 1 - Math.pow(1 - t, 4);
     const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
-    const bottleSvg = bottle3d.querySelector('.stb-bottle-svg') as HTMLElement;
+    const bottleShadow = document.getElementById('stb-bottle-shadow')!;
 
     let lastTickAngle = startAngle;
 
@@ -568,7 +570,8 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
       // Grounded shadow effect that shifts dynamically with wobble
       const shadowX = Math.sin(progress * Math.PI * 14) * 12 * wobbleFade;
       const shadowY = 4 + Math.abs(wobble) * 2;
-      if (bottleSvg) bottleSvg.style.filter = `drop-shadow(${shadowX}px ${shadowY}px 14px rgba(23,35,63,0.35))`;
+      bottleShadow.style.transform = `translate(calc(-50% + ${shadowX}px), calc(-50% + ${shadowY}px))`;
+      bottleShadow.style.opacity = `${0.6 - (Math.abs(wobble) / WOBBLE_AMP) * 0.2}`;
 
       // Sound tick every ~30 degrees of spin
       if (!soundMuted) {
@@ -588,7 +591,8 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
 
       // Lock to exact final rotation (no wobble at rest)
       bottle3d.style.transform = `rotateZ(${finalRotation}deg)`;
-      if (bottleSvg) bottleSvg.style.filter = `drop-shadow(0px 4px 14px rgba(23,35,63,0.35))`;
+      bottleShadow.style.transform = `translate(-50%, calc(-50% + 4px))`;
+      bottleShadow.style.opacity = `0.6`;
 
       // Normalise currentBottleAngle to [0, 360) for consistent next-spin math
       currentBottleAngle = ((finalRotation % 360) + 360) % 360;
@@ -1067,6 +1071,21 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
     z-index: 3;
   }
 
+  .stb-bottle-shadow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: clamp(30px, 7vw, 50px);
+    height: clamp(100px, 20vw, 150px);
+    background: rgba(23, 35, 63, 0.45);
+    border-radius: 50%;
+    filter: blur(14px);
+    transform: translate(-50%, calc(-50% + 4px));
+    z-index: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
   .stb-bottle-3d {
     /*
      * transform-style: preserve-3d — the Y-axis wobble (rotateY) during spin
@@ -1082,7 +1101,6 @@ const description = 'Arrange players in a circle and spin the bottle to pick som
     width: clamp(38px, 8.5vw, 60px);
     height: auto;
     display: block;
-    filter: drop-shadow(0 4px 18px rgba(23,35,63,0.28));
   }
 
   /* ─────────────────────────────────────────────
